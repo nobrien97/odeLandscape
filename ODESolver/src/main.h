@@ -1,0 +1,1 @@
+void doHelp(char* appname);
