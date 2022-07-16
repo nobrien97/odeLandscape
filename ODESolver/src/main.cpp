@@ -3,7 +3,6 @@
 #include "ODESystem.h"
 #include "odePar.h"
 #include "getopt.h"
-#include "matrixClass.h"
 #include <vector>
 #include <iostream>
 
