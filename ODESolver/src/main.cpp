@@ -1,12 +1,13 @@
 #include "ascent/Ascent.h"
-#include "include/rapidcsv.h"
+#include "version.h"
+#include "rapidcsv.h"
 #include "ODESystem.h"
 #include "odePar.h"
 #include "getopt.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include "include/parallel-util.hpp"
+#include "parallel-util.hpp"
 
 #define no_arg 0
 #define arg_required 1
@@ -24,7 +25,7 @@
 
 void doHelp(char* appname) {
     std::fprintf(stdout,
-    "ODE Landscaper: A program for calculating NAR ODE parameter combinations.\n"
+    "ODE Landscaper (V%s): A program for calculating NAR ODE parameter combinations.\n"
     "\n"
     "This program generates phenotypes from a list of molecular trait values.\n"
     "Usage: %s [OPTION]...\n"
@@ -43,6 +44,7 @@ void doHelp(char* appname) {
     "-t             Specify number of threads to use while calculating values.\n"
     "               Example: -t 4\n"
     "\n",
+    static_cast<char>(ODELandscaper_VERSION_MAJOR) + "." + static_cast<char>(ODELandscaper_VERSION_MINOR),
     appname,
     appname
     );
@@ -83,7 +85,7 @@ int main(int argc, char* argv[])
 
         case 'i':
             //TODO: Read csv file, fill parameter ranges
-            doc.Load(((std::string)optarg));
+            doc.Load(((std::string)optarg), rapidcsv::LabelParams(-1, -1));
             continue;
         
         case 'o':
@@ -92,7 +94,7 @@ int main(int argc, char* argv[])
             continue;
 
         case 't':
-            nthreads = (unsigned)optarg;
+            nthreads = std::stoi(optarg);
             continue;
         
         case -1:
@@ -105,8 +107,11 @@ int main(int argc, char* argv[])
     const auto proc_count = std::thread::hardware_concurrency();
     nthreads = (nthreads <= proc_count) ? nthreads : proc_count;
 
+    // Setup output vector
+    std::vector<std::unique_ptr<std::string>> result(doc.GetRowCount());
+
 // Lambda to solve NAR system
-    const auto SolveNAR = [&doc](const unsigned i)
+    const auto SolveNAR = [&doc, &result](const unsigned i)
     {
         // Get molecular trait values
         const std::vector<double> parameters = doc.GetRow<double>(i);
@@ -115,30 +120,25 @@ int main(int argc, char* argv[])
         ODESystem ODE(ODEPar(-1.0, parameters[0], parameters[1], parameters[2], parameters[3]));
         ODE.calculatePhenotype();
 
-        // Write to a file on this thread
-        std::ofstream cur_file;
-        cur_file.open("solution_" + std::to_string(i)  + ".csv");
-        cur_file << ODE.printPars(",") + "\n";
-        cur_file.close();
+        // Write to output vector
+        result[i] = std::make_unique<std::string>(ODE.printPars((char* const)","));
 
         return;
     };
     
-    // Setup output vector
-    std::vector<std::unique_ptr<std::string>> result(doc.GetRowCount(), nullptr);
-
-    
-
     // Parallel compute for each row in input
     parallelutil::queue_based_parallel_for(doc.GetRowCount(), SolveNAR, nthreads);
 
+    // Write to file
+    std::ofstream file;
+    file.open(output_path);
 
-    /* TODO: thread here - each thread:
-        Gets a parameter combination
-        Runs the parameter combination
-        Writes to file using some synchronized file writing class to avoid race conditions 
-    */ 
+    for (int i = 0; i < size(result); ++i)
+    {
+        file << (*result[i]) << "\n";
+    }
 
+    file.close();
 
     return 0;
 }

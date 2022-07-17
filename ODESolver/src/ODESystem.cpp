@@ -45,7 +45,7 @@ double ODESystem::calculatePhenotype()
     return z;
 }
 
-std::string ODESystem::printPars(const char* delim)
+std::string ODESystem::printPars(char* const delim)
 {
     std::vector<double> parameters = _pars.getPars(); 
     std::string result;
@@ -53,11 +53,21 @@ std::string ODESystem::printPars(const char* delim)
     {
         if ((size(parameters) - 1) == i) 
         {
-            result.append(std::to_string(parameters[i]) + delim);
+            result.append(std::to_string(parameters[i]));
             break;
         }
-        result.append(std::to_string(parameters[i]));
+        result.append(std::to_string(parameters[i]) + delim);
     }
 
     return result;
+}
+
+
+ODESystem::ODESystem(/* args */)
+{
+
+}
+
+ODESystem::~ODESystem()
+{
 }

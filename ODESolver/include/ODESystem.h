@@ -14,7 +14,7 @@ private:
 
 public:
     ODESystem(/* args */);
-    ODESystem::ODESystem(ODEPar pars) : _pars(pars) {};
+    ODESystem(ODEPar pars) : _pars(pars) {};
     ~ODESystem();
 
     static double AUC(const double &h, const double &a, const double &b);
@@ -23,14 +23,3 @@ public:
 
     std::string printPars(char* delim);
 };
-
-
-
-ODESystem::ODESystem(/* args */)
-{
-
-}
-
-ODESystem::~ODESystem()
-{
-}
