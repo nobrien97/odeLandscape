@@ -25,7 +25,7 @@
 
 void doHelp(char* appname) {
     std::fprintf(stdout,
-    "ODE Landscaper (V%s): A program for calculating NAR ODE parameter combinations.\n"
+    "ODE Landscaper (V%i.%i): A program for calculating NAR ODE parameter combinations.\n"
     "\n"
     "This program generates phenotypes from a list of molecular trait values.\n"
     "Usage: %s [OPTION]...\n"
@@ -44,7 +44,8 @@ void doHelp(char* appname) {
     "-t             Specify number of threads to use while calculating values.\n"
     "               Example: -t 4\n"
     "\n",
-    static_cast<char>(ODELandscaper_VERSION_MAJOR) + "." + static_cast<char>(ODELandscaper_VERSION_MINOR),
+    ODELandscaper_VERSION_MAJOR,
+    ODELandscaper_VERSION_MINOR,
     appname,
     appname
     );

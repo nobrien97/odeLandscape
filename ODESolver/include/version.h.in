@@ -1,4 +1,3 @@
-#pragma once
 // Version numbers
 #define ODELandscaper_VERSION_MAJOR @ODELandscaper_VERSION_MAJOR@
 #define ODELandscaper_VERSION_MINOR @ODELandscaper_VERSION_MINOR@
