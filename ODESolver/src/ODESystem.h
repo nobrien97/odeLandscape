@@ -20,6 +20,8 @@ public:
     static double AUC(const double &h, const double &a, const double &b);
 
     double calculatePhenotype();
+
+    std::string printPars(char* delim);
 };
 
 

@@ -40,5 +40,24 @@ double ODESystem::calculatePhenotype()
         x_auc.emplace_back(AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]));
     }
 
-    return std::accumulate(x_auc.begin(), x_auc.end(), 0.0);
+    double z = std::accumulate(x_auc.begin(), x_auc.end(), 0.0);
+    this->_pars.setAUC(z);
+    return z;
+}
+
+std::string ODESystem::printPars(const char* delim)
+{
+    std::vector<double> parameters = _pars.getPars(); 
+    std::string result;
+    for (int i = 0; i < size(parameters); ++i)
+    {
+        if ((size(parameters) - 1) == i) 
+        {
+            result.append(std::to_string(parameters[i]) + delim);
+            break;
+        }
+        result.append(std::to_string(parameters[i]));
+    }
+
+    return result;
 }
