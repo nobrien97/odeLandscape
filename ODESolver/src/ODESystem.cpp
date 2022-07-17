@@ -26,6 +26,7 @@ double ODESystem::calculatePhenotype()
     asc::RK4 integrator;
     asc::Recorder recorder;
 
+    // Solve
     while (t < t_end)
     {
         // Add a small epsilon to X to get around floating point imprecision
@@ -34,13 +35,16 @@ double ODESystem::calculatePhenotype()
         integrator(NAR, state, t, dt);
     }
 
-    std::vector<double> x_auc = std::vector<double>(recorder.history.size());
+    // Calculate AUC
+    std::vector<double> z_auc = std::vector<double>(recorder.history.size());
     for (uint i = 0; i < recorder.history.size()-1; ++i)
     {
-        x_auc.emplace_back(AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]));
+        z_auc[i] = AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]);
     }
 
-    double z = std::accumulate(x_auc.begin(), x_auc.end(), 0.0);
+    double z = std::accumulate(z_auc.begin(), z_auc.end(), 0.0);
+    // Make sure we're above 0.0
+    z = (z >= 0) ? z : 0.0;
     this->_pars.setAUC(z);
     return z;
 }
