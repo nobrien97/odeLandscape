@@ -15,10 +15,12 @@
 
     const struct option longopts[] =
     {
-        { "input",    required_argument,        0,  'i' },
-        { "output",   required_argument,        0,  'o' },
-        { "help",           no_argument,        0,  'h' },
-        { "threads",  required_argument,        0,  't' }, 
+        { "input",    required_argument,    0,  'i' },
+        { "output",   required_argument,    0,  'o' },
+        { "help",           no_argument,    0,  'h' },
+        { "threads",  required_argument,    0,  't' }, 
+        { "optimum",  required_argument,    0,  'p' },
+        { "width",    required_argument,    0,  'w' },
         {0,0,0,0}
     };
 
@@ -27,7 +29,8 @@ void doHelp(char* appname) {
     std::fprintf(stdout,
     "ODE Landscaper (V%i.%i): A program for calculating NAR ODE parameter combinations.\n"
     "\n"
-    "This program generates phenotypes from a list of molecular trait values.\n"
+    "This program generates phenotype and fitness landscapes from a list of molecular\n"
+    "trait values.\n"
     "Usage: %s [OPTION]...\n"
     "Example: %s -h\n"
     "\n"
@@ -43,6 +46,13 @@ void doHelp(char* appname) {
     "\n"
     "-t             Specify number of threads to use while calculating values.\n"
     "               Example: -t 4\n"
+    "\n"
+    "-w             Specify the fitness optimum, the phenotype where fitness is\n"
+    "               maximised.\n"
+    "               Example: -p 2\n"
+    "-s             Specify the width of the Gaussian fitness function: larger\n"
+    "               numbers mean stronger selection.\n"
+    "               Example: -w 0.05\n"
     "\n",
     ODELandscaper_VERSION_MAJOR,
     ODELandscaper_VERSION_MINOR,
@@ -56,10 +66,12 @@ int main(int argc, char* argv[])
 {
     const struct option voptions[] = 
     {
-        { "help",        no_argument,        0,  'h' },
-        { "input",       required_argument,  0,  'i' },
-        { "output",      required_argument,  0,  'o' },
-        { "threads",     required_argument,  0,  't' },
+        { "help",       no_argument,        0,  'h' },
+        { "input",      required_argument,  0,  'i' },
+        { "output",     required_argument,  0,  'o' },
+        { "threads",    required_argument,  0,  't' },
+        { "optimum",    required_argument,  0,  'p' },
+        { "width",      required_argument,  0,  'w' },
         {0,0,0,0}
     };
 
@@ -69,10 +81,12 @@ int main(int argc, char* argv[])
     size_t length = 1000;
     std::string output_path;
     unsigned nthreads = 1;
+    double optimum = 0;
+    double width = 1;
 
     while (options != -1)
     {
-        options = getopt_long(argc, argv, "hi:o:t:", voptions, &opt_idx);
+        options = getopt_long(argc, argv, "hi:o:t:p:w:", voptions, &opt_idx);
     
         switch (options)
         {
@@ -85,17 +99,25 @@ int main(int argc, char* argv[])
             continue;
 
         case 'i':
-            //TODO: Read csv file, fill parameter ranges
+            // Read csv file
             doc.Load(((std::string)optarg), rapidcsv::LabelParams(-1, -1));
             continue;
         
         case 'o':
-            //TODO: write output .csv with parameter combinations and phenotypes
+            // write output .csv with parameter combinations and phenotypes
             output_path = (std::string)optarg;
             continue;
 
         case 't':
             nthreads = std::stoi(optarg);
+            continue;
+
+        case 'p':
+            optimum = std::stod(optarg);
+            continue;
+        
+        case 'w':
+            width = std::stod(optarg);
             continue;
         
         case -1:
@@ -112,7 +134,7 @@ int main(int argc, char* argv[])
     std::vector<std::unique_ptr<std::string>> result(doc.GetRowCount());
 
 // Lambda to solve NAR system
-    const auto SolveNAR = [&doc, &result](const unsigned i)
+    const auto SolveNAR = [&doc, &result, &width, &optimum](const unsigned i)
     {
         // Get molecular trait values
         const std::vector<double> parameters = doc.GetRow<double>(i);
@@ -122,7 +144,7 @@ int main(int argc, char* argv[])
         ODE.calculatePhenotype();
 
         // Write to output vector
-        result[i] = std::make_unique<std::string>(ODE.printPars((char* const)","));
+        result[i] = std::make_unique<std::string>(ODE.printPars(width, optimum, (char* const)","));
 
         return;
     };
@@ -134,7 +156,7 @@ int main(int argc, char* argv[])
     std::ofstream file;
     file.open(output_path);
 
-    for (int i = 0; i < size(result); ++i)
+    for (int i = 0; i < result.size(); ++i)
     {
         file << (*result[i]) << "\n";
     }

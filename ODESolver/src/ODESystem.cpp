@@ -49,21 +49,29 @@ double ODESystem::calculatePhenotype()
     return z;
 }
 
-std::string ODESystem::printPars(char* const delim)
+std::string ODESystem::printPars(double width, double fitnessOptimum, char* const delim = ",")
 {
-    std::vector<double> parameters = _pars.getPars(); 
+    // Calculate fitness to print
+    double fitness = calculateFitness(width, fitnessOptimum);
+    std::vector<double> parameters = _pars.getPars();
+    parameters.insert(parameters.begin(), fitness); 
     std::string result;
-    for (int i = 0; i < size(parameters); ++i)
+    for (int i = 0; i < parameters.size(); ++i)
     {
-        if ((size(parameters) - 1) == i) 
+        if ((parameters.size() - 1) == i) 
         {
             result.append(std::to_string(parameters[i]));
             break;
         }
         result.append(std::to_string(parameters[i]) + delim);
     }
-
     return result;
+}
+
+double ODESystem::calculateFitness(double width, double optimum)
+{
+    double dist = pow((_pars.getPars()[0] - optimum), 2);
+    return exp(-(dist * width));
 }
 
 
