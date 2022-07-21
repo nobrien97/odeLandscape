@@ -49,7 +49,7 @@ double ODESystem::calculatePhenotype()
     return z;
 }
 
-std::string ODESystem::printPars(double width, double fitnessOptimum, char* const delim = ",")
+std::string ODESystem::printPars(double width, double fitnessOptimum, char const *delim = ",")
 {
     // Calculate fitness to print
     double fitness = calculateFitness(width, fitnessOptimum);

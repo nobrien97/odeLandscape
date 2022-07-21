@@ -23,5 +23,5 @@ public:
 
     double calculateFitness(double width, double optimum);
 
-    std::string printPars(double width, double fitnessOptimum, char* const delim = ",");
+    std::string printPars(double width, double fitnessOptimum, char const *delim);
 };
