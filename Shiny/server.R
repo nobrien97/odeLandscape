@@ -5,10 +5,14 @@
 #############################################################################
 
 
-library(tidyverse)
 library(shiny)
 library(shinyjs)
+library(shinyFiles)
+library(tidyverse)
+library(latex2exp)
+library(cowplot)
 library(rvest)
+library(metR)
 
 # Helper functions
 
@@ -17,6 +21,13 @@ molTraits <- list(
   "bZ",
   "KZ",
   "KXZ"
+)
+
+molTraitsFigLab <- list(
+  "aZ" = TeX("$\\alpha_Z$ value"),
+  "bZ" = TeX("$\\beta_Z$ value"),
+  "KZ" = TeX("$K_Z$ value"),
+  "KXZ" = TeX("$K_{XZ}$ value")
 )
 
 
@@ -34,7 +45,9 @@ buttons <- c("dataInput", "seedInput", "modelindexInput", "widthInput",
 runLandscaper <- function(df_path, width, optimum, threads) {
   system(sprintf("ODELandscaper -i %s -o ./landscape.csv -w %f -p %f -t %i",
                  df_path, width, optimum, threads))
-  return(read_csv("./landscape.csv", col_names = F, col_types = "double"))
+  result <- read_csv("./landscape.csv", col_names = F, col_types = "d")
+  names(result) <- c("fitness", "pheno", "aZ", "bZ", "KZ", "KXZ")
+  return(result)
 }
 
 # Generate input file for landscaper
@@ -49,21 +62,14 @@ genInputFile <- function(aZ, bZ, KZ, KXZ) {
 # Determine which input is pointing to which molecular trait
 getMolTraitRanges <- function(xaxis, yaxis, missing1, missing2) {
   result <- list()
-  result[[xaxis]] <- seq(0, 50, by = 0.05)
-  result[[yaxis]] <- seq(0, 50, by = 0.05)
-  inputs <- list(xaxis, yaxis)
-  missing <- setdiff(molTraits, inputs)
+  result[[xaxis]] <- seq(0, 10, by = 0.05)
+  result[[yaxis]] <- seq(0, 10, by = 0.05)
+  missing <- getMissingNames(xaxis, yaxis)
   
-  result[[missing[1]]] <- missing1
-  result[[missing[2]]] <- missing2
+  result[[missing[[1]]]] <- missing1
+  result[[missing[[2]]]] <- missing2
 
   return(result)
-}
-
-# Fetch simulation data with the matching seed and model index
-fetchSimData <- function(file, seed, modelindex) {
-  return(read_csv(system(sprintf("awk -F , \'$2 == \"%s\" && $3 == %i\' %s",
-                 seed, modelindex, file))))
 }
 
 # Update missing trait names for our sliders
@@ -72,23 +78,12 @@ updateMissingValues <- function(input, session) {
   
   # Updated list of missing_values after changing x and y axes
   newNames <- getMissingNames(input$xaxisSelector, input$yaxisSelector)
+  session$userData$missing_values <- unlist(newNames)
 
-  index_x <- match(input$xaxisSelector, session$userData$missing_values)
-  index_y <- match(input$yaxisSelector, session$userData$missing_values)
-    
-  if (!is.na(index_x)) {
-    updateSliderInput(session, paste0("missing_value", index_x), label = paste(newNames[[index_x]], "value"))
-    session$userData$missing_values[index_x] <- newNames[[index_x]] 
-  } else {
-    session$userData$missing_values[1] <- input$xaxisSelector
-    }
-  
-  if (!is.na(index_y)) {
-    updateSliderInput(session, paste0("missing_value", index_y), label = paste(newNames[[index_y]], "value"))
-    session$userData$missing_values[index_y] <- newNames[[index_y]] 
-  } else {
-    session$userData$missing_values[2] <- input$yaxisSelector
-  }
+  updateSliderInput(session, "missing_value1", 
+                    label = paste(newNames[[1]], "value"))
+  updateSliderInput(session, "missing_value2", 
+                    label = paste(newNames[[2]], "value"))
 
 }
 
@@ -103,17 +98,105 @@ nextTrait <- function(curTrait) {
          molTraits[[match(curTrait, molTraits) + 1]], molTraits[1]))
 }
 
+# Fetch simulation data with the matching seed and model index
+fetchSimData <- function(file, seed, modelindex) {
+  if (file.exists(file)) {
+    # If we want a random seed, find one
+    if (seed == "random")
+      seed <- sample(system(sprintf("tail -n +2 %s | awk -F',' '{print $2}' | sort -u", 
+                                    file), intern = T), 1)
+    
+    header <- "gen,seed,modelindex,mutType,mutID,position,constraint,originGen,value,chi,Freq,mutCount,fixGen,meanH,VA,phenomean,phenovar,dist,mean_w,deltaPheno,deltaW,Q1_AUC,Q1_aZ,Q1_bZ,Q1_KZ,Q1_KXZ,Q2_AUC,Q2_aZ,Q2_bZ,Q2_KZ,Q2_KXZ,Q3_AUC,Q3_aZ,Q3_bZ,Q3_KZ,Q3_KXZ"
+    system(sprintf("awk -F , \'$2 == \"%s\" && $3 == %i\' %s > ./sim.csv",
+                                   seed, modelindex, file))
+    # Stick a header on
+    system(sprintf("sed -i -e '1i%s' ./sim.csv", header))
+    return(read_csv("./sim.csv", 
+                    col_select = c(1:3, 16, 19, 28:31), 
+                    col_types = "iffdddddd") %>% distinct())
+  }
+}
+
+plotElements <- function(xaxis, yaxis, breaks) {
+  list(
+    labs(x = molTraitsFigLab[[xaxis]], y = molTraitsFigLab[[yaxis]]),
+    geom_contour_filled(breaks = breaks),
+    scale_x_continuous(limits = c(0, 10)),
+    scale_y_continuous(limits = c(0, 10)),
+    theme_bw(),
+    theme(text = element_text(size = 16), legend.position = "bottom"),
+    guides(fill = guide_legend(nrow=3, byrow = T))
+    )
+}
+
+# Plot data
+plotFigure <- function(df_landscape, input) {
+  fitnesscc <- colorRampPalette(c("#D42B4F", "#2BD4B0"))(11)
+  phenocc <- colorRampPalette(c("#D42B4F", "#2BD4B0"))(11)
+  xaxis <- input$xaxisSelector
+  yaxis <- input$yaxisSelector
+  phenoPlot <- ggplot(df_landscape, aes_string(x = xaxis, 
+                                    y = yaxis,
+                                    z = "pheno")) +
+    plotElements(xaxis, yaxis, breaks = seq(0, max(df_landscape$pheno), length.out = 11)) +
+    scale_colour_manual(aesthetics = 'fill', drop = FALSE, values = phenocc) +
+    labs(fill = "Phenotypic\nvalue (Z)")
+    
+  
+  fitnessPlot <- ggplot(df_landscape, aes_string(x = xaxis, 
+                                          y = yaxis,
+                                          z = "fitness")) +
+    plotElements(xaxis, yaxis, breaks = seq(0, 1, length.out = 11)) +
+    scale_colour_manual(aesthetics = 'fill', drop = FALSE, values = fitnesscc) +
+    labs(fill = "Fitness (w)")
+
+  return(list(phenoPlot, fitnessPlot))
+}
+
+# Overlay simulation
+overlaySimData <- function(plt, df_sim, xaxis, yaxis) {
+  df_sim <- df_sim %>% mutate(dx = lag(!! sym(paste0("Q2_", xaxis))),
+                              dy = lag(!! sym(paste0("Q2_", yaxis))))
+  xaxis <- paste0("Q2_", xaxis)
+  yaxis <- paste0("Q2_", yaxis)
+  list(
+  plt[[1]] + geom_segment(mapping = aes_string(x = xaxis, 
+                                          y = yaxis,
+                                          xend = "dx", yend = "dy",
+                                          color = "phenomean"), 
+                          lineend = "butt", linejoin = "mitre", 
+                          arrow = arrow(length = unit(0.25, "cm")),
+                       data = df_sim, inherit.aes = F) +
+    scale_size_continuous(range = c(0, 4), guide = "none") +
+    scale_color_continuous(guide = "none"),
+  plt[[2]] + geom_segment(mapping = aes_string(x = xaxis, 
+                                          y = yaxis, 
+                                          xend = "dx", yend = "dy",
+                                          color = "mean_w"), 
+                          arrow = arrow(length = unit(0.25, "cm")),
+                       data = df_sim, inherit.aes = F) +
+    scale_size_continuous(range = c(0, 4), guide = "none") +
+    scale_color_continuous(guide = "none")
+    
+
+  )
+}
+
 
 
 server <- function(input, output, session) {
-  # user variables for storing current values of input$missing_value1 and 2
-  session$userData$missing_values <- c("aZ", "bZ")
-
+  volumes <- c(Home = fs::path_home(), "R Installation" = R.home(), getVolumes()())
+  shinyFileChoose(input, "dataInput", roots = volumes, session = session)
+  
+  # Storage for current missing_value names
+  session$userData$missing_values <- c("KZ", "KXZ")
+    
   # Create temp directory for storing simulation info and landscape csv
   session$userData$rootTmpPath <- tempdir()
   session$userData$rootTmpPath <- file.path(session$userData$rootTmpPath, paste0("landscape", sample(1:.Machine$integer.max, 1)))
   if (!dir.exists(session$userData$rootTmpPath))
     dir.create(session$userData$rootTmpPath)
+  setwd(session$userData$rootTmpPath)
   
   observe({
     enable(selector = "[name=yaxisSelector]")
@@ -124,14 +207,42 @@ server <- function(input, output, session) {
     }
     updateMissingValues(input, session)
   }) 
-
+  
   observeEvent(input$goButton, {
     # When we press the button, we first need to lock all inputs
     buttonLocker(buttons)
     # Generate an input to the landscaper
-    inputs <- 
-    session$userData$landscape_input <- genInputFile(
-      input
+    molTraitValues <- getMolTraitRanges(input$xaxisSelector, input$yaxisSelector,
+                                        input$missing_value1, input$missing_value2)
+    genInputFile(
+      molTraitValues[["aZ"]], molTraitValues[["bZ"]], 
+      molTraitValues[["KZ"]], molTraitValues[["KXZ"]]
     )
+    # Calculate landscape
+    session$userData$landscape <- runLandscaper("./samples.csv", 
+                                                input$widthInput, 
+                                                input$optInput, 
+                                                input$threadsInput)
+    
+    session$userData$plotObject <- plotFigure(req(session$userData$landscape), input)
+
+    buttonLocker(buttons)
   }, ignoreNULL = TRUE)
+  
+  simData <- reactive({
+    if (!isTruthy(input$dataInput) | !isTruthy(input$seedInput) | !isTruthy(input$modelindexInput)) {return()}
+    file_selected <- parseFilePaths(volumes, input$dataInput)$datapath
+    fetchSimData(file_selected, input$seedInput, input$modelindexInput)
+  })
+  
+  output$main_plot <- renderPlot({
+    input$goButton
+    if (!is.null(simData()))
+      session$userData$plotObject <- overlaySimData(req(session$userData$plotObject), req(simData()),
+                                                    input$xaxisSelector, input$yaxisSelector)
+
+    if (!is.null(session$userData$plotObject))
+      plot_grid(session$userData$plotObject[[1]], NULL, session$userData$plotObject[[2]], rel_widths = c(1, 0.1, 1), labels = c("A", "", "B"), nrow = 1)
+  })
+  
 }

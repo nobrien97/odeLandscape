@@ -5,7 +5,9 @@
 #############################################################################
 library(shiny)
 library(shinyjs)
+library(shinyFiles)
 library(latex2exp)
+library(parallel)
 
 molTraits <- list(
   "aZ",
@@ -19,22 +21,31 @@ ui <- fluidPage(
   titlePanel("Molecular trait fitness landscape visualiser"),  
   fluidRow(
     column(width = 4,
-      fileInput("dataInput", "Upload data file", accept = ".csv")),
+           radioButtons("xaxisSelector", "X-axis molecular trait", 
+                        choices = molTraits, selected = "aZ")),
     column(width = 4,
-      textInput("seedInput", "Replicate")),
+           radioButtons("yaxisSelector", "Y-axis molecular trait",
+                        choices = molTraits, selected = "bZ")),
     column(width = 4,
-      textInput("modelindexInput", "Model Index")
-    )
+           numericInput("missing_value1", "aZ value", min = 0, 
+                       max = 50, value = 1.0, step = 0.001),
+           numericInput("missing_value2", "bZ value", min = 0, 
+                       max = 50, value = 1.0, step = 0.001)
+    ),
   ),
   fluidRow(
-    column(width = 6,
+    column(width = 4,
       numericInput("widthInput", "Selection strength", 0.005, min = 0.0, 
                    max = NA, step = 0.001)
     ),
-    column(width = 6,
+    column(width = 4,
       numericInput("optInput", "Optimum phenotype", 0, min = 0, 
                    max = NA, step = 1)
     ),
+    column(width = 4,
+      numericInput("threadsInput", "Number of cores", 1, min = 1, 
+                   max = detectCores(), step = 1)
+    )
   ),
   fluidRow(
     column(width = 12,
@@ -43,22 +54,21 @@ ui <- fluidPage(
   ),
   fluidRow(
     hr(),
-    column(width = 4,
-           radioButtons("xaxisSelector", "X-axis molecular trait", 
-                        choices = molTraits, selected = "aZ")),
-    column(width = 4,
-           radioButtons("yaxisSelector", "Y-axis molecular trait",
-                        choices = molTraits, selected = "bZ")),
-    column(width = 4,
-           sliderInput("missing_value1", "aZ value", min = 0, 
-                       max = 50, value = 1.0, step = 0.1),
-           sliderInput("missing_value2", "bZ value", min = 0, 
-                       max = 50, value = 1.0, step = 0.1)
-           ),
+    column(width = 12, align = "center",
+           plotOutput(outputId = "main_plot", height = "600px", width = "1200px"))
   ),
   fluidRow(
-    column(width = 12, align = "center",
-      plotOutput(outputId = "main_plot", height = "800px", width = "600px"))
-  )      
+    hr(),
+    column(width = 4,
+           shinyFilesButton("dataInput", label = "File select", 
+                            title="Select a simulation output file", 
+                            multiple = FALSE, viewtype = "detail")),
+    column(width = 4,
+           textInput("seedInput", "Replicate")
+           ),
+    column(width = 4,
+           numericInput("modelindexInput", "Model Index", value = 1)
+    )
+  )
 )
 
