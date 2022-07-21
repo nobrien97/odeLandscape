@@ -47,10 +47,10 @@ void doHelp(char* appname) {
     "-t             Specify number of threads to use while calculating values.\n"
     "               Example: -t 4\n"
     "\n"
-    "-w             Specify the fitness optimum, the phenotype where fitness is\n"
+    "-p             Specify the fitness optimum, the phenotype where fitness is\n"
     "               maximised.\n"
     "               Example: -p 2\n"
-    "-s             Specify the width of the Gaussian fitness function: larger\n"
+    "-w             Specify the width of the Gaussian fitness function: larger\n"
     "               numbers mean stronger selection.\n"
     "               Example: -w 0.05\n"
     "\n",
