@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/ODESolver"
+    "cmake.sourceDirectory": "${workspaceFolder}/ODESolver",
+    "cmake.configureOnOpen": false
 }

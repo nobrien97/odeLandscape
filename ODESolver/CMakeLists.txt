@@ -18,4 +18,5 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     "${PROJECT_BINARY_DIR}"
     "${PROJECT_SOURCE_DIR}/include"
 )
-message(${PROJECT_SOURCE_DIR})
+
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
