@@ -60,9 +60,11 @@ ui <- fluidPage(
   fluidRow(
     hr(),
     column(width = 4,
-           shinyFilesButton("dataInput", label = "File select", 
-                            title="Select a simulation output file", 
-                            multiple = FALSE, viewtype = "detail")),
+           actionButton("randomButton", "Random Replicate", icon("dice")),
+           textInput("dataInput", "File select")),
+           # shinyFilesButton("dataInput", label = "File select", 
+           #                  title="Select a simulation output file", 
+           #                  multiple = FALSE, viewtype = "detail")),
     column(width = 4,
            textInput("seedInput", "Replicate")
            ),

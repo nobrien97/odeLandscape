@@ -117,6 +117,11 @@ fetchSimData <- function(file, seed, modelindex) {
   }
 }
 
+getRandomSeed <- function(file) {
+  sample(system(sprintf("tail -n +2 %s | awk -F',' '{print $2}' | sort -u", 
+                                file), intern = T), 1)
+}
+
 plotElements <- function(xaxis, yaxis, breaks) {
   list(
     labs(x = molTraitsFigLab[[xaxis]], y = molTraitsFigLab[[yaxis]]),
@@ -153,40 +158,30 @@ plotFigure <- function(df_landscape, input) {
   return(list(phenoPlot, fitnessPlot))
 }
 
-# Overlay simulation
+# Overlay simulation: returns a list of lists to stick onto the numeric solution
 overlaySimData <- function(plt, df_sim, xaxis, yaxis) {
-  df_sim <- df_sim %>% mutate(dx = lag(!! sym(paste0("Q2_", xaxis))),
-                              dy = lag(!! sym(paste0("Q2_", yaxis))))
   xaxis <- paste0("Q2_", xaxis)
   yaxis <- paste0("Q2_", yaxis)
+  list(list(
+  geom_point(mapping = aes_string(x = xaxis, 
+                                  y = yaxis,
+                                  size = "gen"),
+                       data = df_sim, inherit.aes = F),
+    scale_size_continuous(range = c(0, 4), guide = "none")),
   list(
-  plt[[1]] + geom_segment(mapping = aes_string(x = xaxis, 
-                                          y = yaxis,
-                                          xend = "dx", yend = "dy",
-                                          color = "phenomean"), 
-                          lineend = "butt", linejoin = "mitre", 
-                          arrow = arrow(length = unit(0.25, "cm")),
-                       data = df_sim, inherit.aes = F) +
-    scale_size_continuous(range = c(0, 4), guide = "none") +
-    scale_color_continuous(guide = "none"),
-  plt[[2]] + geom_segment(mapping = aes_string(x = xaxis, 
-                                          y = yaxis, 
-                                          xend = "dx", yend = "dy",
-                                          color = "mean_w"), 
-                          arrow = arrow(length = unit(0.25, "cm")),
-                       data = df_sim, inherit.aes = F) +
-    scale_size_continuous(range = c(0, 4), guide = "none") +
-    scale_color_continuous(guide = "none")
-    
-
-  )
+  geom_point(mapping = aes_string(x = xaxis, 
+                                  y = yaxis, 
+                                  size = "gen"),
+                       data = df_sim, inherit.aes = F),
+    scale_size_continuous(range = c(0, 4), guide = "none")
+  ))
 }
 
 
 
 server <- function(input, output, session) {
-  volumes <- c(Home = fs::path_home(), "R Installation" = R.home(), getVolumes()())
-  shinyFileChoose(input, "dataInput", roots = volumes, session = session)
+  # volumes <- c(getVolumes()())
+  # shinyFileChoose(input, "dataInput", roots = volumes, session = session)
   
   # Storage for current missing_value names
   session$userData$missing_values <- c("KZ", "KXZ")
@@ -229,20 +224,37 @@ server <- function(input, output, session) {
     buttonLocker(buttons)
   }, ignoreNULL = TRUE)
   
+  observeEvent(input$randomButton, {
+    updateTextInput(session, "seedInput", value = getRandomSeed(input$dataInput))
+  }, ignoreNULL = TRUE)
+  
   simData <- reactive({
     if (!isTruthy(input$dataInput) | !isTruthy(input$seedInput) | !isTruthy(input$modelindexInput)) {return()}
-    file_selected <- parseFilePaths(volumes, input$dataInput)$datapath
+    #file_selected <- parseFilePaths(volumes, input$dataInput)$datapath
+    file_selected <- input$dataInput
     fetchSimData(file_selected, input$seedInput, input$modelindexInput)
   })
   
   output$main_plot <- renderPlot({
     input$goButton
     if (!is.null(simData()))
-      session$userData$plotObject <- overlaySimData(req(session$userData$plotObject), req(simData()),
+      session$userData$overlayObject <- overlaySimData(req(session$userData$plotObject), req(simData()),
                                                     input$xaxisSelector, input$yaxisSelector)
 
-    if (!is.null(session$userData$plotObject))
-      plot_grid(session$userData$plotObject[[1]], NULL, session$userData$plotObject[[2]], rel_widths = c(1, 0.1, 1), labels = c("A", "", "B"), nrow = 1)
+    # Only plot if we have a plotObject, only stick on overlays if they exist
+    if (!is.null(session$userData$plotObject)) {
+      if (!is.null(session$userData$overlayObject)) {
+        plot_grid(session$userData$plotObject[[1]] + session$userData$overlayObject[[1]], 
+                  NULL, 
+                  session$userData$plotObject[[2]] + session$userData$overlayObject[[2]], 
+                  rel_widths = c(1, 0.1, 1), labels = c("A", "", "B"), nrow = 1)
+      } else {
+        plot_grid(session$userData$plotObject[[1]], 
+                  NULL, 
+                  session$userData$plotObject[[2]], 
+                  rel_widths = c(1, 0.1, 1), labels = c("A", "", "B"), nrow = 1)
+      }
+    }
   })
   
 }
