@@ -78,9 +78,8 @@ int main(int argc, char* argv[])
     int opt_idx = 0;
     int options;
     rapidcsv::Document doc;
-    size_t length = 1000;
     std::string output_path;
-    unsigned nthreads = 1;
+    unsigned int nthreads = 1;
     double optimum = 0;
     double width = 1;
 
@@ -94,10 +93,6 @@ int main(int argc, char* argv[])
             doHelp(argv[0]);
             return 0;
 
-        case 'l':
-            length = (size_t)optarg;
-            continue;
-
         case 'i':
             // Read csv file
             doc.Load(((std::string)optarg), rapidcsv::LabelParams(-1, -1));
@@ -109,7 +104,7 @@ int main(int argc, char* argv[])
             continue;
 
         case 't':
-            nthreads = std::stoi(optarg);
+            nthreads = (std::stoi(optarg) > 0) ? std::stoi(optarg) : 1;
             continue;
 
         case 'p':
@@ -124,6 +119,12 @@ int main(int argc, char* argv[])
             break;
         }
     
+    }
+
+    if (doc.GetRowCount() == 0) 
+    {
+        std::cerr << "Please provide a valid input .csv file with \"-i path/to/file.csv\"." << std::endl;
+        return 1;
     }
 
     // Check nthreads is <= number cores
