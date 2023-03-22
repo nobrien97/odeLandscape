@@ -1,4 +1,5 @@
 #include "ODESystem.h"
+#include <iostream>
 #include <numeric>
 
 
@@ -36,13 +37,17 @@ double ODESystem::calculatePhenotype()
     }
 
     // Calculate AUC
-    std::vector<double> z_auc = std::vector<double>(recorder.history.size());
+	double z = 0;
     for (uint i = 0; i < recorder.history.size()-1; ++i)
     {
-        z_auc[i] = AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]);
+        z += AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]);
     }
 
-    double z = std::accumulate(z_auc.begin(), z_auc.end(), 0.0);
+/*
+    std::cout << "AUC info: " << z << " " << this->_pars.aZ() << " " << _pars.bZ() << 
+        " " << _pars.KZ() << " " << _pars.KXZ() << std::endl;
+*/
+    
     // Make sure we're above 0.0
     z = (z >= 0) ? z : 0.0;
     this->_pars.setAUC(z);
