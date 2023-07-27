@@ -53,6 +53,7 @@ void doHelp(char* appname) {
     "-w             Specify the width of the Gaussian fitness function: larger\n"
     "               numbers mean stronger selection.\n"
     "               Example: -w 0.05\n"
+    "-I             Specifies that the first column is an identifier for the combo.\n"
     "\n",
     ODELandscaper_VERSION_MAJOR,
     ODELandscaper_VERSION_MINOR,
@@ -72,6 +73,7 @@ int main(int argc, char* argv[])
         { "threads",    required_argument,  0,  't' },
         { "optimum",    required_argument,  0,  'p' },
         { "width",      required_argument,  0,  'w' },
+        { "identifier", no_argument,        0,  'I' },
         {0,0,0,0}
     };
 
@@ -82,10 +84,11 @@ int main(int argc, char* argv[])
     unsigned int nthreads = 1;
     double optimum = 0;
     double width = 1;
+    int id = 0;
 
     while (options != -1)
     {
-        options = getopt_long(argc, argv, "hi:o:t:p:w:", voptions, &opt_idx);
+        options = getopt_long(argc, argv, "hi:o:t:p:w:I", voptions, &opt_idx);
     
         switch (options)
         {
@@ -114,7 +117,9 @@ int main(int argc, char* argv[])
         case 'w':
             width = std::stod(optarg);
             continue;
-        
+        case 'I':
+            id = 1;
+            continue;
         case -1:
             break;
         }
@@ -135,17 +140,22 @@ int main(int argc, char* argv[])
     std::vector<std::unique_ptr<std::string>> result(doc.GetRowCount());
 
 // Lambda to solve NAR system
-    const auto SolveNAR = [&doc, &result, &width, &optimum](const unsigned i)
+    const auto SolveNAR = [&doc, &result, &width, &optimum, &id](const unsigned i)
     {
         // Get molecular trait values
         const std::vector<double> parameters = doc.GetRow<double>(i);
 
-        // Solve for phenotype
-        ODESystem ODE(ODEPar(-1.0, parameters[0], parameters[1], parameters[2], parameters[3]));
+        // Solve for phenotype: offset by 1 if id is true
+        ODESystem ODE(ODEPar(-1.0, parameters[0+id], parameters[1+id], parameters[2+id], parameters[3+id]));
         ODE.calculatePhenotype();
 
         // Write to output vector
         result[i] = std::make_unique<std::string>(ODE.printPars(width, optimum, (char* const)","));
+        // if bool, we need to attach parameter[0] to the front
+        if ((bool)id)
+        {
+            result[i].get()->insert(0, std::to_string(parameters[0]) + ",");
+        }
 
         return;
     };
