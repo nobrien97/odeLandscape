@@ -51,6 +51,9 @@ std::vector<double> FFBHPar::SolveODE()
         // Hill function/feedback component of X
         nextState[0] = ( pow(curState[2], n()) / (pow(KZX(), n()) + pow(curState[2], n())) ) - aX() * curState[0];
 
+        // Update Xnew with dXH
+        Xnew += nextState[0];
+        
         // Y
 		nextState[1] = base() * Xnew + bY() * pow(Xnew, n()) / ( pow(KY(), n()) + pow(Xnew, n()) ) - aY() * curState[1];
 		
