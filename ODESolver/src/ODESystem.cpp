@@ -47,7 +47,7 @@ double ODESystem::calculatePhenotype()
     std::cout << "AUC info: " << z << " " << this->_pars.aZ() << " " << _pars.bZ() << 
         " " << _pars.KZ() << " " << _pars.KXZ() << std::endl;
 */
-    
+/*    
     // Make sure we're above 0.0
     z = (z >= 0) ? z : 0.0;
     this->_pars.setAUC(z);
@@ -80,7 +80,7 @@ double ODESystem::calculateFitness(double width, double optimum)
 }
 
 
-ODESystem::ODESystem(/* args */)
+ODESystem::ODESystem(/* args */) /*
 {
 
 }

@@ -1,61 +1,79 @@
 #include <vector>
 #include <memory>
+#include "ascent/Ascent.h"
 #pragma once
 class ODEPar
 {
-private:
-    double _AUC = 2.5353073611315153; // default value when all parameters are 1
-    double _aZ = 1.0;
-	double _bZ = 1.0;
-	double _KZ = 1.0;
-	double _KXZ = 1.0;
-
+protected:
+    double _AUC = 1.0; // default value when all parameters are 1
+    std::vector<double> _pars;
 public:
-    ODEPar(double AUC, double aZ, double bZ, double KZ, double KXZ) : 
-            _AUC(AUC), _aZ(aZ), _bZ(bZ), _KZ(KZ), _KXZ(KXZ) {};
-    ODEPar();
-    ~ODEPar();
+    ODEPar() {};
+    ODEPar(int pars);
+    ODEPar(int numPar, std::vector<double> pars);
+    ~ODEPar() = default;
 
-    bool operator==(const ODEPar rhs) const 
-    {
-        return 
-            _aZ == rhs._aZ &&
-            _bZ == rhs._bZ &&
-            _KZ == rhs._KZ &&
-            _KXZ == rhs._KXZ
-        ;
-    }
+    enum motif_enum {
+		NAR,
+		PAR,
+		FFLC1,
+		FFLI1,
+		FFBH,
+        none
+	};
+
+    static motif_enum HashMotifString(std::string motif);
+
+    double static calculateFitness(double pheno, double width, double optimum);
+    std::string printPars(double width, double fitnessOptimum, char const *delim);
 
     void operator ++ (){  
         count++;  
     }  
+
+    bool operator==(const ODEPar rhs) const
+    {
+        if (numPars != rhs.numPars)
+        {
+            return false;
+        }
+
+        size_t sum = 0;
+        for (size_t i = 0; i < numPars; ++i)
+        {
+            sum += (_pars[i] == rhs._pars[i] ? 1 : 0);
+        }
+        return sum == numPars;
+    }
+
+    static std::unique_ptr<ODEPar> MakeODEPtr(motif_enum motifType);
+    static std::unique_ptr<ODEPar> MakeODEPtr(motif_enum motifType, const ODEPar &initialODEPar);
+
+    //static ODEPar* MakeODEPar
+
+    bool Compare(const ODEPar rhs); 
+
+    virtual std::vector<double> SolveODE();
+
+    static double AUC(const double &h, const double &a, const double &b);
+
+    const size_t numPars = 0;
+    unsigned int count = 1; // Count the number of instances in the population that this exists: needs to be reset to 1 every generation! 
     
     // Set a given value
-    void setParValue(size_t i, double val);
+    void setParValue(int i, double val);
 
     // Set all values
-    void setParValue(std::vector<double> vals);
+    void setParValue(std::vector<double> vals, bool firstElementIsAUC = false);
 
     // Get an ODEPar from a vector of ODEPars
     static double getODEValFromVector(const ODEPar& target, const std::vector<std::unique_ptr<ODEPar>>& vec, bool incrementCount = false);
 
     // Get all the values from an ODEPar
-    std::vector<double> getPars();
-
-    const double& AUC() const { return _AUC; }
-    const double& aZ() const { return _aZ; }
-    const double& bZ() const { return _bZ; }
-    const double& KZ() const { return _KZ; }
-    const double& KXZ() const { return _KXZ; }
-
-    double& AUC() { return _AUC; }
-    double& aZ() { return _aZ; }
-    double& bZ() { return _bZ; }
-    double& KZ() { return _KZ; }
-    double& KXZ() { return _KXZ; }
-
-    unsigned int count = 1; // Count the number of instances in the population that this exists: needs to be reset to 1 every generation! 
+    std::vector<double> getPars(bool returnAUC = true);
 
     void setAUC(double val) { _AUC = val; }
+
+    double getParValue(int i);
 
 };

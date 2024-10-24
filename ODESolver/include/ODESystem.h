@@ -4,7 +4,6 @@
 class ODESystem
 {
 private:
-    /* data */
     ODEPar _pars;
     const double Xstart = 1.0;
     const double Xstop = 6.0;
@@ -13,7 +12,7 @@ private:
     int X = 0;
 
 public:
-    ODESystem(/* args */);
+    ODESystem();
     ODESystem(ODEPar pars) : _pars(pars) {};
     ~ODESystem();
 
@@ -21,7 +20,7 @@ public:
 
     double calculatePhenotype();
 
-    double calculateFitness(double width, double optimum);
+    double static calculateFitness(double width, double optimum);
 
     std::string printPars(double width, double fitnessOptimum, char const *delim);
 };
