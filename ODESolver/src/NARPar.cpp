@@ -27,8 +27,10 @@ std::vector<double> NARPar::SolveODE()
 	// Declare/define a lambda which defines the ODE system - this is going to be very ugly
 	auto NARDerivative = [this, &Xstart, &Xstop, &X](const asc::state_t &val, asc::state_t &dxdt, double t)
 	{
+
 		// dZ <- base * X + bZ * (X^n/(KXZ^n + X^n)) * ((KZ^n)/((KZ^n)+(Z^n))) - aZ*Z
-		dxdt[0] = base() * X + bZ() * pow(X, n()) / (pow(KXZ(), n()) + pow(X, n())) * (pow(KZ(), n())/(pow(KZ(), n()) + pow(val[0], n()))) - aZ() * val[0];
+		double Xnew = X * XMult();
+		dxdt[0] = base() * Xnew + bZ() * pow(Xnew, n()) / (pow(KXZ(), n()) + pow(Xnew, n())) * (pow(KZ(), n())/(pow(KZ(), n()) + pow(val[0], n()))) - aZ() * val[0];
 	};
 
 	// Set up the initial state
