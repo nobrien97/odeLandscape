@@ -1,13 +1,23 @@
+library(tidyverse)
+library(deSolve)
+library(DescTools)
+library(paletteer)
+library(ggh4x)
+library(ggpmisc)
+
 # Generate a table of molecular trait combinations
 setwd("/mnt/c/GitHub/odeLandscape/ODESolver/tests")
-# Randomly sample 10000 genotypes
-aZ <- exp(rnorm(10000))
-bZ <- exp(rnorm(10000))
-KZ <- exp(rnorm(10000))
-KXZ <- exp(rnorm(10000))
-base <- exp(rnorm(10000))
-n <- exp(rnorm(10000))
-XMult <- exp(rnorm(10000))
+
+NUM_SAMPLES <- 1000
+
+# Randomly sample NUM_SAMPLES genotypes
+aZ <- exp(rnorm(NUM_SAMPLES))
+bZ <- exp(rnorm(NUM_SAMPLES))
+KZ <- exp(rnorm(NUM_SAMPLES))
+KXZ <- exp(rnorm(NUM_SAMPLES))
+base <- exp(rnorm(NUM_SAMPLES))
+n <- exp(rnorm(NUM_SAMPLES))
+XMult <- exp(rnorm(NUM_SAMPLES))
 
 samples_NARPAR <- data.frame(
     aZ = aZ,
@@ -22,9 +32,9 @@ samples_NARPAR <- data.frame(
 write.table(samples_NARPAR, "./samples_PARNAR.csv", sep = ",", row.names = FALSE,
     col.names = FALSE, quote = FALSE)
 
-aY <- exp(rnorm(10000))
-bY <- exp(rnorm(10000))
-KY <- exp(rnorm(10000))
+aY <- exp(rnorm(NUM_SAMPLES))
+bY <- exp(rnorm(NUM_SAMPLES))
+KY <- exp(rnorm(NUM_SAMPLES))
 
 samples_FFL <- data.frame(
     aY = aY,
@@ -41,8 +51,8 @@ samples_FFL <- data.frame(
 write.table(samples_FFL, "./samples_FFL.csv", sep = ",", row.names = FALSE,
     col.names = FALSE, quote = FALSE)
 
-aX <- exp(rnorm(10000))
-KZX <- exp(rnorm(10000))
+aX <- exp(rnorm(NUM_SAMPLES))
+KZX <- exp(rnorm(NUM_SAMPLES))
 
 samples_FFBH <- data.frame(
     aX = aX,
@@ -68,17 +78,13 @@ system("ODELandscaper -i ./samples_FFL.csv -o ./out_FFLC1.csv -s FFLC1 -t 8 -p 2
 system("ODELandscaper -i ./samples_FFL.csv -o ./out_FFLI1.csv -s FFLI1 -t 8 -p 2 -w 0.05")
 system("ODELandscaper -i ./samples_FFBH.csv -o ./out_FFLBH.csv -s FFBH -t 8 -p 2 -w 0.05")
 
-library(tidyverse)
-library(deSolve)
-library(DescTools)
-
 # ODE system for feedback autoregulation:
 ODEs_NAR <- function(t, state, parameters) {
   with (as.list(c(state, parameters)), {
     # step function leads to numerical issues in lsoda:
     #dZ <- bZ * (t > Xstart && t <= Xstop & Z<1) - aZ*Z
     # use Hill function instead:
-    X <- (t > Xstart && t <= Xstop)
+    X <- XMult * (t > Xstart && t <= Xstop)
     dZ <- base * X + bZ * (t > Xstart && t <= Xstop) * ((X^Hilln)/(KXZ^Hilln + X^Hilln)) * ((KZ^Hilln)/(KZ^Hilln + Z^Hilln)) - aZ*Z
     return(list(c(dZ)))
   })
@@ -90,7 +96,6 @@ ODEs_NAR <- function(t, state, parameters) {
 ODEs_PAR <- function(t, state, parameters) {
   with (as.list(c(state, parameters)), {
     X <- XMult * (t > Xstart && t <= Xstop)
-    
     dZ <- base * X + bZ * (X^Hilln/(KXZ^Hilln + X^Hilln)) * ((Z^Hilln)/((KZ^Hilln)+(Z^Hilln))) - aZ*Z
     return(list(c(dZ)))
   })
@@ -237,10 +242,10 @@ for (i in 1:nrow(samples_FFBH)) {
   combos$Xstop <- 6
       
     #Values for the C1 FFL
-    state <- c(Y = 0, Z = 0)
+    state <- c(XH = 0, Y = 0, Z = 0)
     times <- seq(0, 10, by = 0.1)
     params <- c(Xstart = combos$Xstart, Xstop = combos$Xstop, aX = combos$aX, KZX = combos$KZX,
-                bY = combos$bY, KY = combos$KY, KXZ = combos$KXZ, aZ = combos$aZ,
+                aY = combos$aY, bY = combos$bY, KY = combos$KY, KXZ = combos$KXZ, aZ = combos$aZ,
                 bZ = combos$bZ, base = combos$base,
                 Hilln = combos$n, XMult = combos$XMult)
 
@@ -248,7 +253,7 @@ for (i in 1:nrow(samples_FFBH)) {
       as.data.frame() %>%
       as_tibble() %>%
       mutate(X = ifelse(time >= params["Xstart"] & time <= params["Xstop"], 1, 0)) %>%
-      select(time, X, Y, Z)
+      select(time, X, XH, Y, Z)
     
     out <- cbind(i, AUC(solution$time, solution$Z, absolutearea = T))
     colnames(out) = c("modelindex", "Z")
@@ -258,51 +263,99 @@ for (i in 1:nrow(samples_FFBH)) {
 }
 
 
-
 # Combine data frames
+
+# Load in R
 out_NAR_R <- read.table("out_AUC_NAR_R.tsv", sep = "\t", header = F)
 out_PAR_R <- read.table("out_AUC_PAR_R.tsv", sep = "\t", header = F)
-out_FFLC1_R <- read.table("out_AUC_PAR_R.tsv", sep = "\t", header = F)
-out_FFLI1_R <- read.table("out_AUC_PAR_R.tsv", sep = "\t", header = F)
+out_FFLC1_R <- read.table("out_AUC_FFLC1_R.tsv", sep = "\t", header = F)
+out_FFLI1_R <- read.table("out_AUC_FFLI1_R.tsv", sep = "\t", header = F)
+out_FFBH_R <- read.table("out_AUC_FFBH_R.tsv", sep = "\t", header = F)
 
-out_R <- read.table("out_AUC_R.tsv", sep = "\t", header = F)
+names(out_NAR_R) <- c("modelindex", "Z")
+names(out_PAR_R) <- c("modelindex", "Z")
+names(out_FFLC1_R) <- c("modelindex", "Z")
+names(out_FFLI1_R) <- c("modelindex", "Z")
+names(out_FFBH_R) <- c("modelindex", "Z")
 
-names(out_slim) <- c("modelindex", "A", "B")
-names(out_R) <- c("modelindex", "A", "B")
+out_NAR_R$motif <- "NAR"
+out_PAR_R$motif <- "PAR"
+out_FFLC1_R$motif <- "FFLC1"
+out_FFLI1_R$motif <- "FFLI1"
+out_FFBH_R$motif <- "FFBH"
 
-out_slim[names(lhc_samples)[2:4]] <- NA
-for (index in unique(out_slim$modelindex)) {
-  out_slim[out_slim$modelindex == index, names(lhc_samples)] <- lhc_samples[index, ]
-}
+out_NAR_R$calcMode <- "R"
+out_PAR_R$calcMode <- "R"
+out_FFLC1_R$calcMode <- "R"
+out_FFLI1_R$calcMode <- "R"
+out_FFBH_R$calcMode <- "R"
 
-out_R[names(lhc_samples)[2:4]] <- NA
-for (index in unique(out_R$modelindex)) {
-  out_R[out_R$modelindex == index, names(lhc_samples)] <- lhc_samples[index, ]
-}
-
-df_combined <- rbind(out_slim, out_R)
-df_combined$modelindex[df_combined$modelindex > 512] <- 1:512
+# Adjust modelindex so they are unique
+out_PAR_R$modelindex = out_PAR_R$modelindex + 100
+out_FFLC1_R$modelindex = out_FFLC1_R$modelindex + 200
+out_FFLI1_R$modelindex = out_FFLI1_R$modelindex + 300
+out_FFBH_R$modelindex = out_FFBH_R$modelindex + 400
 
 
+out_NAR_C <- read.table("out_NAR.csv", sep = ",", header = F)
+out_PAR_C <- read.table("out_PAR.csv", sep = ",", header = F)
+out_FFLC1_C <- read.table("out_FFLC1.csv", sep = ",", header = F)
+out_FFLI1_C <- read.table("out_FFLI1.csv", sep = ",", header = F)
+out_FFBH_C <- read.table("out_FFLBH.csv", sep = ",", header = F)
+
+out_NAR_C <- as.data.frame(out_NAR_C[,2])
+out_PAR_C <- as.data.frame(out_PAR_C[,2])
+out_FFLC1_C <- as.data.frame(out_FFLC1_C[,2])
+out_FFLI1_C <- as.data.frame(out_FFLI1_C[,2])
+out_FFBH_C <- as.data.frame(out_FFBH_C[,2])
+
+names(out_NAR_C) <- c("Z")
+names(out_PAR_C) <- c("Z")
+names(out_FFLC1_C) <- c("Z")
+names(out_FFLI1_C) <- c("Z")
+names(out_FFBH_C) <- c("Z")
+
+out_NAR_C$modelindex <- 1:nrow(out_NAR_C)
+out_PAR_C$modelindex <- 1:nrow(out_PAR_C) + 100
+out_FFLC1_C$modelindex <- 1:nrow(out_FFLC1_C) + 200
+out_FFLI1_C$modelindex <- 1:nrow(out_FFLI1_C) + 300
+out_FFBH_C$modelindex <- 1:nrow(out_FFBH_C) + 400
+
+out_NAR_C$motif <- "NAR"
+out_PAR_C$motif <- "PAR"
+out_FFLC1_C$motif <- "FFLC1"
+out_FFLI1_C$motif <- "FFLI1"
+out_FFBH_C$motif <- "FFBH"
+
+out_NAR_C$calcMode <- "C"
+out_PAR_C$calcMode <- "C"
+out_FFLC1_C$calcMode <- "C"
+out_FFLI1_C$calcMode <- "C"
+out_FFBH_C$calcMode <- "C"
+
+# Combine data frames
+df_combined <- rbind(out_NAR_C, out_PAR_C, out_FFLC1_C, out_FFLI1_C, out_FFBH_C,
+                     out_NAR_R, out_PAR_R, out_FFLC1_R, out_FFLI1_R, out_FFBH_R)
 # Scale data
+df_combined$ZScaled <- scale(df_combined$Z)
 
-df_combined$AScaled <- scale(df_combined$A)
-df_combined$BScaled <- scale(df_combined$B)
+df_combined <- pivot_wider(df_combined, names_from = calcMode, values_from = Z)
 
-# Plot distances?
-df_combined$distA <- NA
-df_combined$distB <- NA
+df_combined <- df_combined %>%
+  group_by(modelindex, motif) %>%
+  fill(R, C) %>%
+  fill(R, C, .direction = "up") %>%
+  distinct()
 
-for (idx in unique(df_combined$modelindex)) {
-  df_combined[idx,]$distA <- c(dist(df_combined$A[df_combined$modelindex == idx]))
-  df_combined[idx,]$distB <- c(dist(df_combined$B[df_combined$modelindex == idx]))
-  df_combined[idx,]$scaleddistA <- c(dist(df_combined$AScaled[df_combined$modelindex == idx]))
-  df_combined[idx,]$scaleddistB <- c(dist(df_combined$BScaled[df_combined$modelindex == idx]))
-}
-
-# Calculate maximum distances
-
-max(df_combined$distA[!is.na(df_combined$distA)])
-max(df_combined$distB[!is.na(df_combined$distB)])
-
-write.table(df_combined, file = "out_AUC.tsv", sep = "\t", row.names = F)
+ggplot(df_combined,
+  aes(x = C, y = R, colour = motif)) +
+  facet_nested(.~"Motif" + motif) +
+  geom_point() +
+  stat_poly_line(method = "lm") +
+  stat_poly_eq(label.y = 0.95, rr.digits = 5) +          
+  scale_colour_paletteer_d("MetBrewer::Johnson") +
+  labs(x = "Z AUC Ascent", y = "Z AUC deSolve", colour = "Motif") +
+  theme_bw() +
+  theme(text = element_text(size = 14), legend.position = "bottom")
+    
+ggsave("AUC_comparison.png", device = png, width = 10, height = 3)
