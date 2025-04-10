@@ -7,13 +7,15 @@ class FFBHPar : public ODEPar
 private:
     double _AUC = 2.5353073611315153; // default value when all parameters are 1
 public:
-    FFBHPar(double AUC, std::vector<double> pars);
+    FFBHPar(std::vector<double> traits, std::vector<double> pars);
     FFBHPar();
 
     std::vector<double> SolveODE() override;
 
     const static int numPars = 11;
+    const static int numTraits = 4;
 
+    // Molecular components
     const double& AUC() const { return _AUC; }
     const double& aX() const { return _pars[0]; }
     const double& KZX() const { return _pars[1]; }
@@ -39,5 +41,16 @@ public:
     double& base() { return _pars[8]; }
     double& n() { return _pars[9]; }
     double& XMult() { return _pars[10]; }
+
+    // Traits
+    const double& TimeToMaxExpression() const { return _solutionTraits[0]; }
+    const double& MaxExpression() const { return _solutionTraits[1]; }
+    const double& TimeToSecondSteadyState() const { return _solutionTraits[2]; }
+    const double& SecondSteadyState() const { return _solutionTraits[3]; }
+
+    const inline void SetTimeToHalfMaxExpression(double value) { _solutionTraits[0] = value; }
+    const inline void SetMaxExpression(double value) { _solutionTraits[1] = value; }
+    const inline void SetTimeToSecondSteadyState(double value) { _solutionTraits[2] = value; }
+    const inline void SetSecondSteadyState(double value) { _solutionTraits[3] = value; }
 
 };

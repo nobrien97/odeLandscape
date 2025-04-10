@@ -1,22 +1,25 @@
 #include "FFLC1Par.h"
 
-FFLC1Par::FFLC1Par(double AUC, std::vector<double> pars) : ODEPar(numPars, pars)
+FFLC1Par::FFLC1Par(std::vector<double> traits, std::vector<double> pars) : ODEPar(numPars, numTraits, traits, pars)
 {
-    _AUC = AUC;
     _pars.resize(numPars, 1.0);
-    _pars[6] = 0.01; // constitutive promoter
+	setParValue(pars, false);
+	_solutionTraits.resize(numTraits);
+	SetTraits(traits);
+    //_pars[6] = 0.01; // constitutive promoter
 }
 
 FFLC1Par::FFLC1Par() : ODEPar(numPars) 
 {
 	_pars.resize(numPars, 1.0);
     _pars[6] = 0.01; // constitutive promoter
+	_solutionTraits.resize(numTraits);
 }
 
 std::vector<double> FFLC1Par::SolveODE()
 {
     // Initialise output
-    std::vector<double> result(1, 0.0);
+    //std::vector<double> result(numTraits, 0.0);
 
     // static components
 	const double Xstart = 1.0; 
@@ -33,9 +36,9 @@ std::vector<double> FFLC1Par::SolveODE()
         // dZ <- bZ * ((X * Y)^Hilln)/((KXZ^Hilln + X^Hilln) * (KY^Hilln + Y^Hilln)) - aZ*Z
         
         double Xnew = X * XMult();
-
-		nextState[0] = base() * Xnew + bY() * pow(Xnew, n()) / (pow(KY(), n()) + pow(Xnew, n())) - aY() * curState[0];
-		nextState[1] = base() * Xnew + bZ() * pow(Xnew * curState[0], n()) / ( (pow(KXZ(), n()) + pow(Xnew, n())) * (pow(KY(), n()) + pow(curState[0], n())) ) - aZ() * curState[1];    
+		double baseline = std::max(base() - 0.99, 0.0); // Adjust baseline so it is relative to the default value, 0.01 (instead of 1)
+		nextState[0] = bY() * pow(Xnew, n()) / (pow(KY(), n()) + pow(Xnew, n())) - aY() * curState[0];
+		nextState[1] = baseline + bZ() * pow(Xnew * curState[0], n()) / ( (pow(KXZ(), n()) + pow(Xnew, n())) * (pow(KY(), n()) + pow(curState[0], n())) ) - aZ() * curState[1];    
     };
 
 	// Set up the initial state
@@ -53,17 +56,26 @@ std::vector<double> FFLC1Par::SolveODE()
 		recorder({t, (asc::value_t)X, state[0], state[1]});
 		integrator(FFLC1Derivative, state, t, dt);
 	}
+
+	// Measure traits
+	SetResponseDelay(ODEPar::CalcDelayTime(recorder, Xstart, Xstop, 3, aZ(), base()));
+
+	// Start measurement from after response delay to avoid identifying the delay as the steady state
+	std::vector<double> steadyState = ODEPar::CalcSteadyState(recorder, 1.0 + ResponseDelay(), Xstop, 3);
+	SetResponseTime(steadyState[0]);
+	SetSteadyState(steadyState[1]);
+
 	// Calculate AUC
-	double z = 0;
-	#pragma omp simd reduction(+:z)
-	for (uint i = 0; i < recorder.history.size()-1; ++i)
-	{
-		z += ODEPar::AUC(0.1, (double)recorder.history[i][3], (double)recorder.history[i + 1][3]);
-	}
+	// double z = 0;
+	// #pragma omp simd reduction(+:z)
+	// for (uint i = 0; i < recorder.history.size()-1; ++i)
+	// {
+	// 	z += ODEPar::AUC(0.1, (double)recorder.history[i][3], (double)recorder.history[i + 1][3]);
+	// }
 	
 	// Check that z is > 0, set AUC, return
-	z = (z >= 0) ? z : 0.0;
-    result[0] = z;
-    setAUC(z);
-    return result;
+	// z = (z >= 0) ? z : 0.0;
+    // result[0] = z;
+    // setAUC(z);
+    return {ResponseTime(), ResponseDelay(), SteadyState()};
 }

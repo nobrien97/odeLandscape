@@ -50,12 +50,13 @@ void doHelp(char* appname) {
     "-t             Specify number of threads to use while calculating values.\n"
     "               Example: -t 4\n"
     "\n"
-    "-p             Specify the fitness optimum, the phenotype where fitness is\n"
-    "               maximised.\n"
-    "               Example: -p 2\n"
-    "-w             Specify the width of the Gaussian fitness function: larger\n"
-    "               numbers mean stronger selection.\n"
-    "               Example: -w 0.05\n"
+    "-p             Specify the fitness optimum, the vector of trait values where fitness is\n"
+    "               maximised. Separate traits with a comma ','.\n"
+    "               Example: -p '2,3,5'\n"
+    "-w             Specify the width of the multivariate Gaussian fitness function: larger\n"
+    "               numbers mean stronger selection. Each value corresponds to the width on\n"
+    "               a single trait axis. Separate values commas ','.\n"
+    "               Example: -w 0.05,0.001,0.2\n"
     "-I             Specifies that the first column is an identifier for the combo.\n"
     "\n",
     ODELandscaper_VERSION_MAJOR,
@@ -87,8 +88,11 @@ int main(int argc, char* argv[])
     std::string output_path;
     std::string system_string;
     unsigned int nthreads = 1;
-    double optimum = 0;
-    double width = 1;
+    std::string opt_str;
+
+    // TODO: To start, we will only handle diagonal Sigma matrices, so we can feed in a vector
+    // of variances instead of a full v/cov matrix
+    std::string width_str;
     int id = 0;
 
     while (options != -1)
@@ -122,11 +126,11 @@ int main(int argc, char* argv[])
             continue;
 
         case 'p':
-            optimum = std::stod(optarg);
+            opt_str = (std::string)optarg;
             continue;
         
         case 'w':
-            width = std::stod(optarg);
+            width_str = (std::string)optarg;
             continue;
 
         case 'I':
@@ -138,6 +142,50 @@ int main(int argc, char* argv[])
         }
     
     }
+
+    // Handle width and optimum conversion from string input to std::vector<double>
+    std::vector<double> optimum;
+    std::vector<double> width;
+    
+    std::string temp_str;
+    std::stringstream ss(opt_str);
+
+    if (opt_str == "") 
+    {
+        optimum.emplace_back(0.0);
+    }
+    else 
+    {
+        // Fill the optimum vector
+        while (std::getline(ss, temp_str, ',')) 
+        {
+            optimum.emplace_back(std::stod(temp_str));
+        }
+        
+    }
+
+    if (width_str == "")
+    {
+        width.emplace_back(1.0);
+    }
+    else
+    {
+        // Fill the width vector
+        ss = std::stringstream(width_str);
+        while (std::getline(ss, temp_str, ',')) 
+        {
+            width.emplace_back(std::stod(temp_str));
+        }
+    }
+
+    // If the width and optimum vectors are different sizes, something has gone wrong
+    if (width.size() != optimum.size()) 
+    {
+        std::cerr << "Optimum and width are unequal sizes!" << std::endl;
+        return 1;
+    }
+
+    // If width or optimum weren't passed in, fill those values
 
     if (doc.GetRowCount() == 0) 
     {

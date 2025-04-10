@@ -1,16 +1,23 @@
 #include <vector>
 #include <memory>
 #include "ascent/Ascent.h"
+#define STATS_USE_OPENMP
+#define STATS_ENABLE_EIGEN_WRAPPERS
+#define STATS_ENABLE_STDVEC_WRAPPERS
+#include "stats.hpp"
 #pragma once
 class ODEPar
 {
 protected:
     double _AUC = 1.0; // default value when all parameters are 1
     std::vector<double> _pars;
+    std::vector<double> _solutionTraits;
+
 public:
     ODEPar() {};
     ODEPar(int pars);
     ODEPar(int numPar, std::vector<double> pars);
+    ODEPar(int numPar, int numTrait, std::vector<double> traits, std::vector<double> pars);
     ~ODEPar() = default;
 
     enum motif_enum {
@@ -24,8 +31,8 @@ public:
 
     static motif_enum HashMotifString(std::string motif);
 
-    double static calculateFitness(double pheno, double width, double optimum);
-    std::string printPars(double width, double fitnessOptimum, char const *delim);
+    double static calculateFitness(std::vector<double> pheno, std::vector<double> width, std::vector<double> optimum);
+    std::string printPars(std::vector<double> width, std::vector<double> fitnessOptimum, char const *delim);
 
     void operator ++ (){  
         count++;  
@@ -58,7 +65,8 @@ public:
     static double AUC(const double &h, const double &a, const double &b);
 
     const size_t numPars = 0;
-    unsigned int count = 1; // Count the number of instances in the population that this exists: needs to be reset to 1 every generation! 
+    const size_t numTraits = 0;
+    uint count = 1; // Count the number of instances in the population that this exists: needs to be reset to 1 every generation! 
     
     // Set a given value
     void setParValue(int i, double val);
@@ -75,5 +83,39 @@ public:
     void setAUC(double val) { _AUC = val; }
 
     double getParValue(int i);
+
+    static std::vector<double> CalcSteadyState(const asc::Recorder &solution, const double& startTime, const double& stopTime, const int &solutionIndex = 0);
+
+    static double CalcDelayTime(const asc::Recorder &solution, const double &startTime, const double &stopTime, const int &solutionIndex, const double& aZ = 1.0, const double& baseline = 0.0);
+
+    static std::vector<double> CalcMaxExpression(const asc::Recorder &solution, const float& startTime, const int &solutionIndex);
+
+    static double CalcTimeAboveThreshold(const asc::Recorder &solution, const double &threshold, const int &solutionIndex);
+
+    static std::vector<double> CalcSecondSteadyState(const asc::Recorder &solution, const double& prevSteadyState, const double& prevSteadyStateTime, const int &solutionIndex);
+
+    // Function for simple baseline regulation when t < Xstart
+    static inline double SimpleRegulation(const float& t, const float& aZ, const float &baseline) {
+        return (baseline / aZ) * (1 - std::exp(-aZ*t));
+    };
+
+    static inline double Interpolate(double x1, double y1, double x2, double y2, double y_target) {
+        return x1 + (y_target - y1) * (x2 - x1) / (y2 - y1);
+    };
+    
+    inline std::vector<double> GetTraits() { return _solutionTraits; } 
+
+    inline void SetTraits(std::vector<double> values) 
+    {
+        if (_solutionTraits.size() != values.size())
+        {
+            return;
+        }
+
+        for (int i = 0; i < _solutionTraits.size(); ++i)
+        {
+            _solutionTraits[i] = values[i];
+        }
+    }
 
 };
