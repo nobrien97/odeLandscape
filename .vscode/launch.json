@@ -2,7 +2,7 @@
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
+    "version": "0.3.0",
     "configurations": [
         {
             "name": "(gdb) Launch",
@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${cwd}/build/ODELandscaper",
             "args": ["-i${workspaceFolder}/ODESolver/tests/test_NARPAR.csv", "-o${workspaceFolder}/ODESolver/tests/test_PAR_out.csv", "-sPAR", "-t4", "-p0.28,0.161", "-w0.05,0.05"],
-            "stopAtEntry": true,
+            "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
             "externalConsole": false,

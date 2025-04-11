@@ -20,6 +20,7 @@ std::vector<double> PARPar::SolveODE()
 {
     // Initialise output
     //std::vector<double> result(1, 0.0);
+	std::cout << "Solving PAR" << std::endl;
 
     // static components
 	const double Xstart = 1.0; 
@@ -32,7 +33,7 @@ std::vector<double> PARPar::SolveODE()
 	{
 		double Xnew = X * XMult();
 		double baseline = std::max(base() - 0.99, 0.0); // Adjust baseline so it is relative to the default value, 0.01 (instead of 1)
-		// dZ <- base * X + bZ * (X^n/(KXZ^n + X^n)) * ((Z^n)/((KZ^n)+(Z^n))) - aZ*Z
+		// dZ <- base + bZ * (X^n/(KXZ^n + X^n)) * ((Z^n)/((KZ^n)+(Z^n))) - aZ*Z
 		dxdt[0] = baseline + bZ() * pow(Xnew, n()) / (pow(KXZ(), n()) + pow(Xnew, n())) * (pow(val[0], n())/(pow(KZ(), n()) + pow(val[0], n()))) - aZ() * val[0];
 	};
 
@@ -52,10 +53,14 @@ std::vector<double> PARPar::SolveODE()
 		integrator(PARDerivative, state, t, dt);
 	}
 
+	//recorder.csv("PAR_test.csv");
+
 	// Calculate traits
 	std::vector<double> steadyState = ODEPar::CalcSteadyState(recorder, Xstart, Xstop, 2);
 	SetSteadyState(steadyState[1]);
 	SetResponseTime(steadyState[0]);	
+
+	//std::cout << "Steady state: " << steadyState[1] << " Response time: " << steadyState[0] << std::endl;
 
 	// NOTE: Cut response delay since it requires very specific molecular components
 	// For the response delay, need to calculate the dt coming from the environmental input X
