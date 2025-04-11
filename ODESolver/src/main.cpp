@@ -159,6 +159,11 @@ int main(int argc, char* argv[])
         // Fill the optimum vector
         while (std::getline(ss, temp_str, ',')) 
         {
+            // Remove any spaces
+            temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
+                [](const char& c) {return &c == " ";} ), temp_str.end());
+
+            // Add to end
             optimum.emplace_back(std::stod(temp_str));
         }
         
@@ -174,6 +179,10 @@ int main(int argc, char* argv[])
         ss = std::stringstream(width_str);
         while (std::getline(ss, temp_str, ',')) 
         {
+            // Remove any spaces
+            temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
+                [](const char& c) {return &c == " ";} ), temp_str.end());
+            
             width.emplace_back(std::stod(temp_str));
         }
     }
@@ -233,7 +242,7 @@ int main(int argc, char* argv[])
         // Write to output vector
         result[i] = std::make_unique<std::string>(ODE->printPars(width, optimum, (char* const)","));
         // if bool, we need to attach parameter[0] to the front
-        if ((bool)id)
+        if (id > 0)
         {
             result[i].get()->insert(0, std::to_string(id_num) + ",");
         }
