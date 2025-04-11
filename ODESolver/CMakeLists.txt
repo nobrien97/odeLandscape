@@ -34,18 +34,18 @@ message(STATUS "${PROJECT_SOURCE_DIR}")
 # test NAR
 add_test(
   NAME testNAR
-  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_NARPAR.csv" -o "${PROJECT_SOURCE_DIR}/tests/test_NAR_out.csv" -s "NAR" -t 4 -p 0.406,0.44 -w 0.05,0.05
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_NARPAR.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_NAR_out.csv" -s "NAR" -t 4 -p 0.406,0.44 -w 0.05,0.05
 )
 # test PAR
 add_test(
   NAME testPAR
-  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_NARPAR.csv" -o "${PROJECT_SOURCE_DIR}/tests/test_PAR_out.csv" -s "PAR" -t 4 -p 0.28,0.161 -w 0.05,0.05
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_NARPAR.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_PAR_out.csv" -s "PAR" -t 4 -p 0.28,0.161 -w 0.05,0.05
 )
 
 # test FFLC1
 add_test(
   NAME testFFLC1
-  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFL.csv" -o "${PROJECT_SOURCE_DIR}/tests/test_FFLC1_out.csv" -s "FFLC1" -t 4 -p 1.304,0.1,0.157 -w 0.05,0.05,0.05
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFL.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_FFLC1_out.csv" -s "FFLC1" -t 4 -p 1.304,0.1,0.157 -w 0.05,0.05,0.05
 )
 
 # test FFLI1
