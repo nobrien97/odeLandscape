@@ -1,5 +1,5 @@
 #include "NARPar.h"
-
+/*
 NARPar::NARPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(numPars, numTraits, traits, pars)
 {
     _pars.resize(numPars, 1.0);
@@ -8,6 +8,7 @@ NARPar::NARPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(nu
 	SetTraits(traits);
     //_pars[4] = 0.0; // set baseline to 0 to start
 }
+*/
 
 NARPar::NARPar() : ODEPar(numPars) 
 {

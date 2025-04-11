@@ -1,7 +1,6 @@
 #include <vector>
 #include <memory>
 #include "ascent/Ascent.h"
-#define STATS_USE_OPENMP
 #define STATS_ENABLE_EIGEN_WRAPPERS
 #define STATS_ENABLE_STDVEC_WRAPPERS
 #include "stats.hpp"
@@ -16,8 +15,8 @@ protected:
 public:
     ODEPar() {};
     ODEPar(int pars);
-    ODEPar(int numPar, std::vector<double> pars);
-    ODEPar(int numPar, int numTrait, std::vector<double> traits, std::vector<double> pars);
+    /*ODEPar(int numPar, std::vector<double> pars);*/
+    /*ODEPar(int numPar, int numTrait, std::vector<double> traits, std::vector<double> pars); */
     ~ODEPar() = default;
 
     enum motif_enum {

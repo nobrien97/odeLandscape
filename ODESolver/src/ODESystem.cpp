@@ -1,3 +1,4 @@
+/*
 #include "ODESystem.h"
 #include <iostream>
 #include <numeric>
@@ -43,11 +44,9 @@ double ODESystem::calculatePhenotype()
         z += AUC(0.1, (double)recorder.history[i][2], (double)recorder.history[i + 1][2]);
     }
 
-/*
     std::cout << "AUC info: " << z << " " << this->_pars.aZ() << " " << _pars.bZ() << 
         " " << _pars.KZ() << " " << _pars.KXZ() << std::endl;
-*/
-/*    
+    
     // Make sure we're above 0.0
     z = (z >= 0) ? z : 0.0;
     this->_pars.setAUC(z);
@@ -80,7 +79,7 @@ double ODESystem::calculateFitness(double width, double optimum)
 }
 
 
-ODESystem::ODESystem(/* args */) /*
+ODESystem::ODESystem()
 {
 
 }
@@ -88,3 +87,4 @@ ODESystem::ODESystem(/* args */) /*
 ODESystem::~ODESystem()
 {
 }
+*/

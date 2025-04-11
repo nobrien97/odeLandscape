@@ -7,7 +7,7 @@ class PARPar : public ODEPar
 private:
     double _AUC = 6.17; // default value when all parameters are 1
 public:
-    PARPar(std::vector<double> traits, std::vector<double> pars);
+    /*PARPar(std::vector<double> traits, std::vector<double> pars);*/
     PARPar();
 
     std::vector<double> SolveODE() override;
@@ -37,10 +37,10 @@ public:
     // Traits
     const double& ResponseTime() const { return _solutionTraits[0]; }
     //const double& ResponseDelay() const {return _solutionTraits[1]; } // NOTE: ResponseDelay requires very specific conditions to arise, secondary function, removing for now
-    const double& SteadyState() const { return _solutionTraits[2]; }
+    const double& SteadyState() const { return _solutionTraits[1]; }
 
     const inline void SetResponseTime(double value) { _solutionTraits[0] = value; }
     //const inline void SetResponseDelay(double value) { _solutionTraits[1] = value; }
-    const inline void SetSteadyState(double value) { _solutionTraits[2] = value; }
+    const inline void SetSteadyState(double value) { _solutionTraits[1] = value; }
 
 };

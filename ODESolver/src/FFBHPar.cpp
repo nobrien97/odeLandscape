@@ -1,5 +1,5 @@
 #include "FFBHPar.h"
-
+/*
 FFBHPar::FFBHPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(numPars, numTraits, traits, pars)
 {
     _pars.resize(numPars, 1.0);
@@ -8,7 +8,7 @@ FFBHPar::FFBHPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(
     SetTraits(traits);
     //_pars[8] = 0.0; // set baseline to 0 to start
 }
-
+*/
 FFBHPar::FFBHPar() : ODEPar(numPars) 
 {
     _pars.resize(numPars, 1.0);

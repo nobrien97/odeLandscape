@@ -1,5 +1,5 @@
 #include "PARPar.h"
-
+/*
 PARPar::PARPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(numPars, numTraits, traits, pars)
 {
     _pars.resize(numPars, 1.0);
@@ -8,7 +8,7 @@ PARPar::PARPar(std::vector<double> traits, std::vector<double> pars) : ODEPar(nu
 	SetTraits(traits);
     //_pars[4] = 0.01; // starting baseline expression
 }
-
+*/
 PARPar::PARPar() : ODEPar(numPars) 
 {
 	_pars.resize(numPars, 1.0);

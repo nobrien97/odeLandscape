@@ -1,5 +1,5 @@
 #include "FFLI1Par.h"
-
+/*
 FFLI1Par::FFLI1Par(std::vector<double> traits, std::vector<double> pars) : ODEPar(numPars, numTraits, traits, pars)
 {
     _pars.resize(numPars, 1.0);
@@ -8,6 +8,7 @@ FFLI1Par::FFLI1Par(std::vector<double> traits, std::vector<double> pars) : ODEPa
 	SetTraits(traits);
     //_pars[6] = 0.01; // constitutive promoter
 }
+*/
 
 FFLI1Par::FFLI1Par() : ODEPar(numPars) 
 {

@@ -7,7 +7,7 @@ class NARPar : public ODEPar
 private:
     double _AUC = 2.5353073611315153; // default value when all parameters are 1
 public:
-    NARPar(std::vector<double> traits, std::vector<double> pars);
+    /*NARPar(std::vector<double> traits, std::vector<double> pars);*/
     NARPar();
 
     std::vector<double> SolveODE() override;

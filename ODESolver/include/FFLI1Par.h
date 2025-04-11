@@ -7,7 +7,7 @@ class FFLI1Par : public ODEPar
 private:
     double _AUC = 6.17; // default value when all parameters are 1
 public:
-    FFLI1Par(std::vector<double> traits, std::vector<double> pars);
+    /*FFLI1Par(std::vector<double> traits, std::vector<double> pars);*/
     FFLI1Par();
 
     std::vector<double> SolveODE() override;

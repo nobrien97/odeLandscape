@@ -22,8 +22,13 @@ ODEPar::motif_enum ODEPar::HashMotifString(std::string motif)
 std::string ODEPar::printPars(std::vector<double> width, std::vector<double> fitnessOptimum, char const *delim = ",")
 {
     // Calculate fitness to print
-    double fitness = calculateFitness(GetTraits(), width, fitnessOptimum);
-    std::vector<double> parameters = getPars(true);
+    std::vector<double> traits = GetTraits();
+
+    double fitness = calculateFitness(traits, width, fitnessOptimum);
+    std::vector<double> parameters = getPars(false);
+
+    // Insert trait values and fitness to the parameters array
+    parameters.insert(parameters.begin(), traits.begin(), traits.end());
     parameters.insert(parameters.begin(), fitness); 
     std::string result;
     for (int i = 0; i < parameters.size(); ++i)
@@ -44,10 +49,13 @@ double ODEPar::calculateFitness(std::vector<double> pheno, std::vector<double> w
     // TODO: This might error because DiagonalMatrix has EigenBase as a base class, not MatrixBase
     // Seems like some functions on MatrixBase are used in stats::dmvnorm?
     Eigen::VectorXd width_xd = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(width.data(), width.size());
-    Eigen::DiagonalMatrix<double, Eigen::Dynamic> Sigma = width_xd.asDiagonal();
+    Eigen::VectorXd pheno_xd = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(pheno.data(), pheno.size());
+    Eigen::VectorXd optimum_xd = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(optimum.data(), optimum.size());
 
-    double fitness = stats::dmvnorm(pheno, optimum, Sigma);
-    double normConst = stats::dmvnorm(optimum, optimum, Sigma);
+    Eigen::MatrixXd Sigma = width_xd.asDiagonal().toDenseMatrix();
+
+    double fitness = stats::dmvnorm(pheno_xd, optimum_xd, Sigma);
+    double normConst = stats::dmvnorm(optimum_xd, optimum_xd, Sigma);
     return fitness / normConst;
 }
 
@@ -78,32 +86,32 @@ std::unique_ptr<ODEPar> ODEPar::MakeODEPtr(motif_enum motifType)
         }
     }
 }
-
+/*
 std::unique_ptr<ODEPar> ODEPar::MakeODEPtr(motif_enum motifType, const ODEPar &initialODEPar)
 {
     switch (motifType)
     {
         case NAR:
-            return std::make_unique<NARPar>(initialODEPar._AUC, initialODEPar._pars);
+            return std::make_unique<NARPar>(7, 2, initialODEPar._solutionTraits, initialODEPar._pars);
             break;
         case PAR:
-            return std::make_unique<PARPar>(initialODEPar._AUC, initialODEPar._pars);
+            return std::make_unique<PARPar>(7, 2, initialODEPar._solutionTraits, initialODEPar._pars);
             break;
         case FFLC1:
-            return std::make_unique<FFLC1Par>(initialODEPar._AUC, initialODEPar._pars);
+            return std::make_unique<FFLC1Par>(9, 3, initialODEPar._solutionTraits, initialODEPar._pars);
             break;
         case FFLI1:
-            return std::make_unique<FFLI1Par>(initialODEPar._AUC, initialODEPar._pars);
+            return std::make_unique<FFLI1Par>(9, 3, initialODEPar._solutionTraits, initialODEPar._pars);
             break;
         case FFBH:
-            return std::make_unique<FFBHPar>(initialODEPar._AUC, initialODEPar._pars);
+            return std::make_unique<FFBHPar>(11, 4, initialODEPar._solutionTraits, initialODEPar._pars);
             break;
         default:
             return nullptr;
             break;
     }
 }
-
+*/
 // No-op default implementation: return an empty vector
 std::vector<double> ODEPar::SolveODE()
 {
@@ -125,8 +133,8 @@ bool ODEPar::Compare(const ODEPar rhs)
 }
 
 ODEPar::ODEPar(int pars) : numPars(pars), _pars(pars, 1.0) {}
-
-ODEPar::ODEPar(int numPar, std::vector<double> pars) : numPars(numPar)
+/*
+ODEPar::ODEPar(int numPar, int numTrait, std::vector<double> traits, std::vector<double> pars) : numPars(numPar), numTraits(numTrait)
 {
     _pars.resize(pars.size());
     for (size_t i = 0; i < numPars; ++i)
@@ -134,7 +142,15 @@ ODEPar::ODEPar(int numPar, std::vector<double> pars) : numPars(numPar)
         _pars[i] = pars[i];
     }
 
+    _solutionTraits.resize(traits.size());
+    for (size_t j = 0; j < numTraits; ++j)
+    {
+        _solutionTraits[j] = traits[j]; 
+    }
+
 }
+*/
+
 
 // Get an ODEPar from a vector of ODEPars
 double ODEPar::getODEValFromVector(const ODEPar& target, const std::vector<std::unique_ptr<ODEPar>>& vec, bool incrementCount)

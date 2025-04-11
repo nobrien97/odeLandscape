@@ -121,7 +121,6 @@ int main(int argc, char* argv[])
             continue;
 
         case 't':
-            std::cout << "threads: " << optarg << std::endl;
             nthreads = (std::stoi(optarg) > 0) ? std::stoi(optarg) : 1;
             continue;
 
