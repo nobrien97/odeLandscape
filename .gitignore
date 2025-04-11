@@ -3,6 +3,12 @@ build/*
 ODESolver/include/ascent/*
 ODESolver/include/rapidcsv.h
 ODESolver/include/parallel-util.hpp
+ODESolver/include/Eigen*
+ODESolver/include/gcem*
+ODESolver/include/stats*
+ODESolver/build
 
 # ignore .csv
 *.csv
+*.tsv
+!test_*
