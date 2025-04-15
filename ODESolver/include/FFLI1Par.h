@@ -12,8 +12,12 @@ public:
 
     std::vector<double> SolveODE() override;
 
-    const static int numPars = 9;
-    const static int numTraits = 3;
+    const size_t numPars = 9;
+    const size_t numTraits = 3;
+
+    inline int GetNumTraits() override { return numTraits; }
+    inline int GetNumPars() override { return numPars; }
+
  
     // Molecular components
     const double& AUC() const { return _AUC; }

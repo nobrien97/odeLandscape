@@ -51,11 +51,17 @@ add_test(
 # test FFLI1
 add_test(
   NAME testFFLI1
-  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFL.csv" -o "${PROJECT_SOURCE_DIR}/tests/test_FFLI1_out.csv" -s "FFLI1" -t 4 -p 0.466,0.336,5.2 -w 0.05,0.05,0.05
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFL.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_FFLI1_out.csv" -s "FFLI1" -t 4 -p 0.466,0.336,5.2 -w 0.05,0.05,0.05
 )
 
 # test FFBH
 add_test(
   NAME testFFBH
-  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFBH.csv" -o "${PROJECT_SOURCE_DIR}/tests/test_FFBH_out.csv" -s "FFBH" -t 4 -p 1.536,0.179,0.933,0.006 -w 0.05,0.05,0.05,0.05
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFBH.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_FFBH_out.csv" -s "FFBH" -t 4 -p 1.536,0.179,0.933,0.006 -w 0.05,0.05,0.05,0.05
+)
+
+# test optimum input file
+add_test(
+  NAME testOptimumInput
+  COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFBH.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_opt_FFBH_out.csv" -s "FFBH" -t 4 -O "${PROJECT_SOURCE_DIR}/tests/optimum.csv"
 )

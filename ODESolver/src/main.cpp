@@ -21,6 +21,7 @@
         { "threads",  required_argument,    0,  't' }, 
         { "optimum",  required_argument,    0,  'p' },
         { "width",    required_argument,    0,  'w' },
+        { "opt_file", required_argument,    0,  'O' },
         {0,0,0,0}
     };
 
@@ -58,6 +59,12 @@ void doHelp(char* appname) {
     "               a single trait axis. Separate values commas ','.\n"
     "               Example: -w 0.05,0.001,0.2\n"
     "-I             Specifies that the first column is an identifier for the combo.\n"
+    "-O             Specify an input file that contains the optimum trait values and selection\n"
+    "               strengths.\n"
+    "               Example: -O '/path/to/optimum_width.csv'.\n"
+    "               The first n columns should be the optimum values, where n is the number of\n"
+    "               traits. The final columns should be the selection strength on each trait. If\n"
+    "               -I is enabled, the first columns is the identifier row.\n"
     "\n",
     ODELandscaper_VERSION_MAJOR,
     ODELandscaper_VERSION_MINOR,
@@ -79,6 +86,7 @@ int main(int argc, char* argv[])
         { "optimum",    required_argument,  0,  'p' },
         { "width",      required_argument,  0,  'w' },
         { "identifier", no_argument,        0,  'I' },
+        { "opt_file",   required_argument,  0,  'O' },
         {0,0,0,0}
     };
 
@@ -95,9 +103,12 @@ int main(int argc, char* argv[])
     std::string width_str;
     int id = 0;
 
+    // Handle input optima
+    rapidcsv::Document doc_opt;
+
     while (options != -1)
     {
-        options = getopt_long(argc, argv, "hi:o:s:t:p:w:I", voptions, &opt_idx);
+        options = getopt_long(argc, argv, "hi:o:s:t:p:w:IO:", voptions, &opt_idx);
     
         switch (options)
         {
@@ -135,7 +146,11 @@ int main(int argc, char* argv[])
         case 'I':
             id = 1;
             continue;
-            
+        
+        case 'O':
+            doc_opt.Load(((std::string)optarg), rapidcsv::LabelParams(-1, -1));
+            continue;
+        
         case -1:
             break;
         }
@@ -145,56 +160,57 @@ int main(int argc, char* argv[])
     // Handle width and optimum conversion from string input to std::vector<double>
     std::vector<double> optimum;
     std::vector<double> width;
-    
-    std::string temp_str;
-    std::stringstream ss(opt_str);
 
-    if (opt_str == "") 
+    if (doc_opt.GetRowCount() == 0)
     {
-        optimum.emplace_back(0.0);
-    }
-    else 
-    {
-        // Fill the optimum vector
-        while (std::getline(ss, temp_str, ',')) 
+        std::string temp_str;
+        std::stringstream ss(opt_str);
+        
+        if (opt_str == "") 
         {
-            // Remove any spaces
-            temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
+            optimum.emplace_back(0.0);
+        }
+        else 
+        {
+            // Fill the optimum vector
+            while (std::getline(ss, temp_str, ',')) 
+            {
+                // Remove any spaces
+                temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
                 [](const char& c) {return &c == " ";} ), temp_str.end());
-
-            // Add to end
-            optimum.emplace_back(std::stod(temp_str));
+                
+                // Add to end
+                optimum.emplace_back(std::stod(temp_str));
+            }
+            
         }
         
-    }
-
-    if (width_str == "")
-    {
-        width.emplace_back(1.0);
-    }
-    else
-    {
-        // Fill the width vector
-        ss = std::stringstream(width_str);
-        while (std::getline(ss, temp_str, ',')) 
+        if (width_str == "")
         {
-            // Remove any spaces
-            temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
+            width.emplace_back(1.0);
+        }
+        else
+        {
+            // Fill the width vector
+            ss = std::stringstream(width_str);
+            while (std::getline(ss, temp_str, ',')) 
+            {
+                // Remove any spaces
+                temp_str.erase(std::remove_if(temp_str.begin(), temp_str.end(), 
                 [](const char& c) {return &c == " ";} ), temp_str.end());
-            
-            width.emplace_back(std::stod(temp_str));
+                
+                width.emplace_back(std::stod(temp_str));
+            }
+        }
+        
+        // If the width and optimum vectors are different sizes, something has gone wrong
+        if (width.size() != optimum.size()) 
+        {
+            std::cerr << "Optimum and width are unequal sizes!" << std::endl;
+            return 1;
         }
     }
-
-    // If the width and optimum vectors are different sizes, something has gone wrong
-    if (width.size() != optimum.size()) 
-    {
-        std::cerr << "Optimum and width are unequal sizes!" << std::endl;
-        return 1;
-    }
-
-    // If width or optimum weren't passed in, fill those values
-
+    
     if (doc.GetRowCount() == 0) 
     {
         std::cerr << "Please provide a valid input .csv file with \"-i path/to/file.csv\"." << std::endl;
@@ -212,7 +228,7 @@ int main(int argc, char* argv[])
     ODEPar::motif_enum motif = ODEPar::HashMotifString(system_string);
 
 // Lambda to solve NAR system
-    const auto SolveODESystem = [&doc, &result, &width, &optimum, &id, &motif](const unsigned i)
+    const auto SolveODESystem = [&doc, &result, &width, &optimum, &doc_opt, &id, &motif](const unsigned i)
     {
         // Get molecular trait values
         const std::vector<double> parameters = doc.GetRow<double>(i);
@@ -224,7 +240,7 @@ int main(int argc, char* argv[])
         std::unique_ptr ODE = ODEPar::MakeODEPtr(motif);
 
         // Check if the row has the right number of elements
-        if (parameters.size() - id != ODE->numPars)
+        if (parameters.size() - id != ODE->GetNumPars())
         {
             std::cout << "Error in parsing row " << i << 
             ": number of input parameters does not match ODE parameter count." << std::endl;
@@ -237,9 +253,29 @@ int main(int argc, char* argv[])
 
         // Solve ODE
         ODE->SolveODE();
+        
+        std::vector<double> thisRunOpt = optimum;
+        std::vector<double> thisRunWidth = width;
+
+        // Figure out fitness for input data
+        
+        if (doc_opt.GetRowCount() == doc.GetRowCount()) {
+            std::cout << "Getting optima from file..." << std::endl;
+            int n = ODE->GetNumTraits();
+            thisRunOpt.reserve(n);
+            thisRunWidth.reserve(n);
+            const std::vector<double> opt_width = doc_opt.GetRow<double>(i);
+            // Get indexes for each 
+            std::cout << "Traits = " << n << std::endl;
+            auto startOptIndex = opt_width.begin() + id;
+            auto endOptIndex = startOptIndex + 4;
+            auto endWidthIndex = opt_width.end();
+            thisRunOpt.insert(thisRunOpt.begin(), startOptIndex, endOptIndex);
+            thisRunWidth.insert(thisRunWidth.begin(), endOptIndex, endWidthIndex);
+        }
 
         // Write to output vector
-        result[i] = std::make_unique<std::string>(ODE->printPars(width, optimum, (char* const)","));
+        result[i] = std::make_unique<std::string>(ODE->printPars(thisRunWidth, thisRunOpt, (char* const)","));
         // if bool, we need to attach parameter[0] to the front
         if (id > 0)
         {
@@ -250,7 +286,8 @@ int main(int argc, char* argv[])
     };
     
     // Parallel compute for each row in input
-    parallelutil::queue_based_parallel_for(doc.GetRowCount(), SolveODESystem, nthreads);
+    SolveODESystem(0);
+    //parallelutil::queue_based_parallel_for(doc.GetRowCount(), SolveODESystem, nthreads);
 
     // Write to file
     std::ofstream file;

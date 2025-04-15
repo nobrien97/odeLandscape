@@ -65,6 +65,10 @@ public:
 
     const size_t numPars = 0;
     const size_t numTraits = 0;
+
+    virtual inline int GetNumTraits() { return numTraits; }
+    virtual inline int GetNumPars() { return numPars; }
+
     uint count = 1; // Count the number of instances in the population that this exists: needs to be reset to 1 every generation! 
     
     // Set a given value
