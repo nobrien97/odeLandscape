@@ -242,37 +242,51 @@ int main(int argc, char* argv[])
         // Check if the row has the right number of elements
         if (parameters.size() - id != ODE->GetNumPars())
         {
-            std::cout << "Error in parsing row " << i << 
+            std::cerr << "Error in parsing row " << i << 
             ": number of input parameters does not match ODE parameter count." << std::endl;
             return;
         }
 
         // If we have an id, we need to offset parameters by 1 since first entry is id
         // Set ODE parameters
+        //std::cout << "Setting par values with id = " << id << std::endl;
         ODE->setParValue({parameters.begin() + id, parameters.end()}, false);
+
+        //std::cout << "Solving ODE" << std::endl;
 
         // Solve ODE
         ODE->SolveODE();
         
-        std::vector<double> thisRunOpt = optimum;
-        std::vector<double> thisRunWidth = width;
+        std::vector<double> thisRunOpt;
+        std::vector<double> thisRunWidth;
 
         // Figure out fitness for input data
-        
+        //std::cout << "Opt file: " << doc_opt.GetRowCount() << std::endl;
+        //std::cout << "Input file: " << doc.GetRowCount() << std::endl;
+
         if (doc_opt.GetRowCount() == doc.GetRowCount()) {
-            std::cout << "Getting optima from file..." << std::endl;
-            int n = ODE->GetNumTraits();
+            //std::cout << "Getting optima from file..." << std::endl;
+            size_t n = ODE->GetNumTraits();
+            //std::cout << n << std::endl;
             thisRunOpt.reserve(n);
             thisRunWidth.reserve(n);
             const std::vector<double> opt_width = doc_opt.GetRow<double>(i);
             // Get indexes for each 
-            std::cout << "Traits = " << n << std::endl;
+            //std::cout << "Traits = " << n << std::endl;
             auto startOptIndex = opt_width.begin() + id;
-            auto endOptIndex = startOptIndex + 4;
+            auto endOptIndex = startOptIndex + n;
             auto endWidthIndex = opt_width.end();
             thisRunOpt.insert(thisRunOpt.begin(), startOptIndex, endOptIndex);
             thisRunWidth.insert(thisRunWidth.begin(), endOptIndex, endWidthIndex);
         }
+
+        if (doc_opt.GetRowCount() == 0) {
+            thisRunOpt = optimum;
+            thisRunWidth = width;
+        }
+
+        //std::cout << "Optimum: " << thisRunOpt.size() << std::endl;
+        //std::cout << "Width: " << thisRunWidth.size() << std::endl;
 
         // Write to output vector
         result[i] = std::make_unique<std::string>(ODE->printPars(thisRunWidth, thisRunOpt, (char* const)","));
@@ -286,8 +300,10 @@ int main(int argc, char* argv[])
     };
     
     // Parallel compute for each row in input
-    SolveODESystem(0);
-    //parallelutil::queue_based_parallel_for(doc.GetRowCount(), SolveODESystem, nthreads);
+    //SolveODESystem(0);
+    
+    //////////////
+    parallelutil::queue_based_parallel_for(doc.GetRowCount(), SolveODESystem, 1);//nthreads);
 
     // Write to file
     std::ofstream file;

@@ -65,3 +65,10 @@ add_test(
   NAME testOptimumInput
   COMMAND ${PROJECT_NAME} -i "${PROJECT_SOURCE_DIR}/tests/test_FFBH.csv" -o "${PROJECT_SOURCE_DIR}/tests/t_opt_FFBH_out.csv" -s "FFBH" -t 4 -O "${PROJECT_SOURCE_DIR}/tests/optimum.csv"
 )
+
+
+# test bug input file
+add_test(
+  NAME testBug
+  COMMAND ${PROJECT_NAME} -i "/mnt/c/GitHub/SLiMTests/tests/newMotifs/randomisedStarts/calcMutationStats/R/d_grid1.csv" -o "/mnt/c/GitHub/SLiMTests/tests/newMotifs/randomisedStarts/calcMutationStats/R/d_popfx1.csv" -s "NAR" -t 4 -O "/mnt/c/GitHub/SLiMTests/tests/newMotifs/randomisedStarts/calcMutationStats/R/d_grid_opt1.csv" -I
+)

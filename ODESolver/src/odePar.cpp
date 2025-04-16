@@ -171,7 +171,7 @@ double ODEPar::getODEValFromVector(const ODEPar& target, const std::vector<std::
 
 std::vector<double> ODEPar::getPars(bool returnAUC)
 {
-    int n = numPars;
+    int n = size(_pars);
     int startIndex = 0;
 
     // If we're returning the AUC, make the vector bigger
@@ -216,7 +216,7 @@ void ODEPar::setParValue(std::vector<double> vals, bool firstElementIsAUC)
         setAUC(vals[0]);
     }    
 
-    for (int i = startIndex; i < numPars; ++i)
+    for (int i = startIndex; i < size(vals); ++i)
     {
         setParValue(i, vals[i]);
     }
