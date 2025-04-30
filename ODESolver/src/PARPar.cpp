@@ -20,7 +20,7 @@ std::vector<double> PARPar::SolveODE()
 {
     // Initialise output
     //std::vector<double> result(1, 0.0);
-	std::cout << "Solving PAR" << std::endl;
+	//std::cout << "Solving PAR" << std::endl;
 
     // static components
 	const double Xstart = 1.0; 
